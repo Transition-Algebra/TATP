@@ -1,0 +1,36 @@
+spec FG is
+  sort Nat .
+  op 0 : () -> Nat .
+  op s_ : Nat -> Nat .
+
+  vars M, N, K : Nat .
+
+  ax s M =(s K)> s N if M =(K)> N .
+  ax M =(K)> N if M =((0);(K))> N .
+
+  ops f_, g_ : Nat -> Nat .
+  ax f 0 = 0 .
+  ax g 0 =(0)> 0 .
+  ax f s N = s f N if g N =(N)> N .
+  ax g s N =(0)> s g N if f N = N .
+endspec
+
+open FG
+set condition bound 10
+`` The following is optional when we do not need to impose any
+`` bounds on the number of rewrite steps:
+set rewrite bound infinity
+reduce f s s 0
+reduce f s s s s s s s s 0
+set condition bound infinity
+reduce f s s s s s s s s 0
+`` The result should be 2, i.e. s s 0.
+`` In general, for any natural number N, f N should evaluate to N.
+set narrowing bound 7
+check g 0 =(0)> 0
+`` The result should be "satisfied"
+check g 0 =(0)> s 0
+`` The result should be "unknown"
+check g s s 0 =(s s 0)> s s 0
+`` The result should be "satisfied"
+close

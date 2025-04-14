@@ -1,0 +1,43 @@
+lang Th[TA]
+
+spec REACHABLE is
+  sort State .
+  ops s1, s2, s3, s4 : () -> State .
+
+  sort Action .
+  ops a, b, c, d : () -> Action .
+
+  sort Goal .
+  ops g1, g2, g3, g4 : () -> Goal .
+
+  ax s1 =( a )> s2 .
+  ax s2 =( a )> s3 .
+  ax s3 =( a )> s4 .
+
+  ax g1 = g2 if s1 =( (a) * )> s4 .
+endspec
+
+spec UNREACHABLE is
+  sort State .
+  ops s1, s2, s3, s4 : () -> State .
+
+  sort Action .
+  ops a, b, c, d : () -> Action .
+
+  sort Goal .
+  ops g1, g2, g3, g4 : () -> Goal .
+
+  ax s1 =( a )> s2 .
+  ax s2 =( a )> s3 .
+  ax s3 =( b )> s4 .
+
+  ax g1 = g3 if s1 =( (a) * )> s4 .
+endspec
+
+open REACHABLE
+ reduce g1
+close
+
+open UNREACHABLE
+ reduce g1
+close

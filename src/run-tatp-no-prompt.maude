@@ -1,0 +1,20 @@
+***( TATP
+
+  This file is part of TATP.
+
+  License : GNU General Public License v2.0 or later (GPL-2.0-or-later)
+  Authors : Daniel Gaina <daniel@imi.kyushu-u.ac.jp>,
+            Adrian Riesco <ariesco@fdi.ucm.es>,
+            Ionut Tutu <Ionut.Tutu@imar.ro>
+
+)
+
+********************************************************************************
+
+set show command off .
+set show stats off .
+set show advisories off .
+popd
+load tatp.maude
+erew in TATP/INTERPRETER/NO-PROMPT : start TATP .
+quit

@@ -1,0 +1,42 @@
+***( SpeX/Lang/Base/Common
+
+  This file is part of the SpeX-languages suite.
+
+  Copyright : (C) 2025 Simion Stoilow Institute of Mathematics of the
+              Romanian Academy (IMAR)
+  License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
+  Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
+
+)
+
+sload ../../../CommonLibs/Term.maude
+
+********************************************************************************
+
+fmod EQ/OPS is
+  protecting TERM/OPS .
+
+  vars T LHS RHS : Term .
+  var  S : Sort .
+  vars EC1 EC2 : EqCondition .
+
+  *** free variables (occurring in a condition)  - - - - - - - - - - - - - - - -
+  op free-vars : EqCondition -> VariableSet .
+  eq free-vars(nil) = none .
+  eq free-vars(LHS = RHS) = vars(LHS) ; vars(RHS) .
+  eq free-vars(T : S) = vars(T) .
+  eq free-vars(LHS := RHS) = vars(RHS) .
+  eq free-vars(EC1 /\ EC2)
+   = free-vars(EC1) ; (free-vars(EC2) \ bound-vars(EC1)) .
+
+  *** bound variables (occurring in a condition)  - - - - - - - - - - - - - - --
+  op bound-vars : EqCondition -> VariableSet .
+  eq bound-vars(nil) = none .
+  eq bound-vars(LHS = RHS) = none .
+  eq bound-vars(T : S) = none .
+  eq bound-vars(LHS := RHS) = vars(LHS) .
+  eq bound-vars(EC1 /\ EC2)
+   = bound-vars(EC1) ; (bound-vars(EC2) \ free-vars(EC1)) .
+endfm
+
+********************************************************************************

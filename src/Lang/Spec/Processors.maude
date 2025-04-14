@@ -1,0 +1,21 @@
+***( SpeX/Lang/Spec
+
+  This file is part of the SpeX-languages suite.
+
+  Copyright : (C) 2021, 2022 Simion Stoilow Institute of Mathematics
+              of the Romanian Academy (IMAR)
+  License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
+  Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
+
+)
+
+sload ./Processor.maude
+sload ./BL/TA.maude
+
+********************************************************************************
+
+mod SPEC/PROCESSORS is
+  including SPEC/PROCESSOR { TA, Spec/TA } .
+endm
+
+********************************************************************************

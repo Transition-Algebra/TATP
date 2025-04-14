@@ -1,0 +1,70 @@
+spec BOOL is
+  sort Bool .
+  ops true, false : () -> Bool .
+endspec
+
+spec CCS is
+  including BOOL .
+
+  sorts Channel, Action .
+  op snd : Channel -> Action .
+  op rcv : Channel -> Action .
+  op tau : () -> Action .
+
+  op _=/=_ : Channel Channel -> Bool .
+  op _=/=_ : Action Action -> Bool .
+
+  sort Process .
+  op 0 : () -> Process .
+  op _._ : Action Process -> Process .
+  op _+_ : Process Process -> Process [assoc comm] .
+  op _|_ : Process Process -> Process [assoc comm] .
+  op _\_ : Process Channel -> Process .
+
+  vars P, P', Q, Q' : Process .
+  vars C, C' : Channel .
+  var A : Action .
+
+  ax snd(C) =/= rcv(C') = true .
+  ax snd(C) =/= snd(C') = C =/= C' .
+  ax rcv(C) =/= snd(C') = true .
+  ax rcv(C) =/= rcv(C') = C =/= C' .
+  ax tau =/= snd(C) = true .
+  ax snd(C) =/= tau = true .
+  ax tau =/= rcv(C) = true .
+  ax rcv(C) =/= tau = true .
+
+  ax (A . P) =(A)> P .
+  ax (P + Q) =(A)> P' if P =(A)> P' .
+  ax (P | Q) =(A)> (P' | Q) if P =(A)> P' .
+  ax (P | Q) =(tau)> (P' | Q') if P =(snd(C))> P' and Q =(rcv(C))> Q' .
+  ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true .
+endspec
+
+spec INSTITUTE is
+  including CCS .
+  ops theorem, coffee, coin : () -> Channel .
+  ax theorem =/= coffee = true .
+  ax theorem =/= coin = true .
+  ax coffee =/= theorem = true .
+  ax coffee =/= coin = true .
+  ax coin =/= theorem = true .
+  ax coin =/= coffee = true .
+
+  ops Institute, Mathematician, CoffeeVM : () -> Process .
+  ax Institute =(tau)> (Mathematician | CoffeeVM) \ coin \ coffee .
+  ax Mathematician =(tau)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) .
+  ax CoffeeVM =(tau)> (rcv(coin) . snd(coffee) . CoffeeVM) .
+
+  op test : () -> Bool .
+  `` ax test = true if Institute =(tau)> (Mathematician | CoffeeVM) \ coin \ coffee [label: t1] .
+  ax test = true if Institute =((tau);(tau))> (((snd(coin) . rcv(coffee) . snd(theorem) . Mathematician)) | CoffeeVM) \ coin \ coffee [label: t2] .
+endspec
+
+open INSTITUTE
+  reduce test
+  `` The result is `true' under the axiom t1 and `false' under the axiom t2.
+  `` It should be `true' in both cases.
+  `` The following query is satisfied, but checking it using narrowing takes more time.
+  check Institute =((tau);(tau))> (((snd(coin) . rcv(coffee) . snd(theorem) . Mathematician)) | CoffeeVM) \ coin \ coffee
+close

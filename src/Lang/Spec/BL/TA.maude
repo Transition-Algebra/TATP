@@ -1,0 +1,27 @@
+***( SpeX/Lang/Spec/BL
+
+  This file is part of the SpeX-languages suite.
+
+  Copyright : (C) 2024 Simion Stoilow Institute of Mathematics of the
+              Romanian Academy (IMAR)
+  License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
+  Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
+
+)
+
+sload ../Base.maude
+sload ../../Base/TA/Processor.maude
+
+********************************************************************************
+
+view Spec/TA from SPEC/SUBPROCESSOR to TA/PROCESSOR { Spec/Pid{TA} } is
+  sort SpecBody to SpecBody{TA} .
+  sort State to AnalysisState{TA} .
+
+  op parse-declaration(QIL:QidList, S:State) to term
+    parse TA input (QIL:QidList) in S:AnalysisState{TA} .
+  op print-declaration(T:Term) to term
+    print TA term (T:Term) .
+endv
+
+********************************************************************************

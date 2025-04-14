@@ -1,0 +1,312 @@
+***( SpeX/Lang/Base/TA
+
+  This file is part of the SpeX-languages suite.
+
+  Copyright : (C) 2024 Simion Stoilow Institute of Mathematics of the
+              Romanian Academy (IMAR)
+  License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
+  Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
+
+)
+
+sload ../Common/Sorts.maude
+sload ../Common/Operations.maude
+sload ../Common/Predicates.maude
+sload ../Common/Sentences.maude
+sload ../Common/Equations.maude
+
+********************************************************************************
+
+fmod TA/LID is
+  sort TA .
+  op TA : -> TA [ctor] .
+endfm
+
+********************************************************************************
+
+fmod TA/SPEC-BODY is
+  protecting TA/LID .
+  extending  SORT-SET-DECL .
+  extending  OP-DECL-SET .
+  extending  PRED-DECL-SET .
+  extending  SEN-DECL-SET .
+  protecting ATTRIBUTE/OPS .
+
+  var  L : TA .
+  vars SB SB' : SpecBody{TA} .
+  var  QI : Qid .
+  var  S : Sort .
+  var  SS : SortSet .
+  var  SSD : SortSetDecl .
+  var  TP : Type .
+  var  TPL : TypeList .
+  var  OD : OpDecl .
+  var  ODS : OpDeclSet .
+  var  PD : PredDecl .
+  var  PDS : PredDeclSet .
+  var  ED : SenDecl .
+  var  EDS : SenDeclSet .
+
+  *** SpecBody{TA}  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  sort SpecBody{TA} .
+  op SpecBody[_]{____} : TA SortSetDecl OpDeclSet PredDeclSet
+    SenDeclSet -> SpecBody{TA}
+    [ctor format (d d d d d n++i ni ni ni n--i d)] .
+
+  *** nil (empty TA specification body)  - - - - - - - - - - - - - - - - - - --
+  op nil : -> SpecBody{TA} .
+  eq nil = (SpecBody[TA]{sorts none . none none none}) .
+
+  *** sorts  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op sorts : SpecBody{TA} -> SortSet .
+  eq sorts(SpecBody[L]{sorts SS . ODS PDS EDS}) = SS .
+
+  *** add-sort  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op add-sort : Sort SpecBody{TA} -> SpecBody{TA} .
+  eq add-sort(S, SpecBody[L]{sorts SS . ODS PDS EDS})
+   = SpecBody[L]{sorts (S ; SS) . ODS PDS EDS} .
+
+  *** ops  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op ops : SpecBody{TA} -> OpDeclSet .
+  eq ops(SpecBody[L]{SSD ODS PDS EDS}) = ODS .
+
+  *** add-op  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op add-decl : OpDecl SpecBody{TA} -> SpecBody{TA} .
+  eq add-decl(OD, SpecBody[L]{SSD ODS PDS EDS})
+   = SpecBody[L]{SSD (OD ODS) PDS EDS} .
+
+  *** preds  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op preds : SpecBody{TA} -> PredDeclSet .
+  eq preds(SpecBody[L]{SSD ODS PDS EDS}) = PDS .
+
+  *** tlabels  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op tlabels : SpecBody{TA} -> QidSet .
+  eq tlabels(SpecBody[L]{SSD ODS PDS EDS}) = symbols(PDS, '* '*) .
+
+  *** add-tlabel  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op add-tlabel : Qid SpecBody{TA} -> SpecBody{TA} .
+  eq add-tlabel(QI, SpecBody[L]{SSD ODS PDS EDS})
+   = SpecBody[L]{SSD ODS (PDS (pred QI : '* '* [none] .)) EDS} .
+
+  *** add-pred  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op add-decl : PredDecl SpecBody{TA} -> SpecBody{TA} .
+  eq add-decl(PD, SpecBody[L]{SSD ODS PDS EDS})
+   = SpecBody[L]{SSD ODS (PD PDS) EDS} .
+
+  *** symbols* (with a given arity, but other sort)  - - - - - - - - - - - - - -
+  op symbols* : SpecBody{TA} TypeList Type -> QidSet .
+  eq symbols*(SpecBody[L]{SSD ODS PDS EDS}, TPL, TP)
+   = symbols*(ODS, TPL, TP) ;
+     if TP == 'AtomicSentence`{TA`} then none else symbols(PDS, TPL) fi .
+
+  *** constants (of a given sort)  - - - - - - - - - - - - - - - - - - - - - - -
+  op consts : SpecBody{TA} Sort -> QidSet .
+  eq consts(SpecBody[L]{SSD ODS PDS EDS}, S)
+   = consts(ODS, S) .
+
+  *** sens  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op sens : SpecBody{TA} -> SenDeclSet .
+  eq sens(SpecBody[L]{SSD ODS PDS EDS}) = EDS .
+
+  *** add-sen  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op add-sen : SenDecl SpecBody{TA} -> SpecBody{TA} .
+  eq add-sen(ED, SpecBody[L]{SSD ODS PDS EDS})
+   = SpecBody[L]{SSD ODS PDS (ED EDS)} .
+
+  *** sum  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op _+_ : SpecBody{TA} SpecBody{TA} -> SpecBody{TA} .
+  eq SB + SB'
+   = SpecBody[TA]{
+       sorts sorts(SB) ; sorts(SB') .
+       (ops(SB) ops(SB'))
+       (preds(SB) preds(SB'))
+       (sens(SB) sens(SB'))
+     } .
+
+  *** signature  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op signature : SpecBody{TA} -> SpecBody{TA} .
+  eq signature(SpecBody[L]{SSD ODS PDS EDS})
+   = SpecBody[L]{SSD pure(ODS) pure(PDS) none} .
+endfm
+
+********************************************************************************
+
+fmod TA/FORMULA is
+  protecting TA/SPEC-BODY .
+
+  *** actions  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  sorts AtomicAction{TA} Action{TA} .
+  subsort AtomicAction{TA} < Action{TA} .
+  op Act[_]{_} : TA Term -> AtomicAction{TA} [ctor] .
+  op _;_ : Action{TA} Action{TA} -> Action{TA} [ctor assoc prec 31] .
+  op _+_ : Action{TA} Action{TA} -> Action{TA} [ctor assoc prec 41] .
+  op _* : Action{TA} -> Action{TA} [ctor prec 21] .
+
+  *** formulae  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  sort Equation{TA} .
+  op Eq[_]{_=_} : TA Term Term -> Equation{TA} [ctor] .
+
+  sorts AtomicTransition{TA} Transition{TA} .
+  subsort AtomicTransition{TA} < Transition{TA} .
+  op Trans[_]{_=(_)>_} : TA Term AtomicAction{TA} Term
+    -> AtomicTransition{TA} [ctor] .
+  op Trans[_]{_=(_)>_} : TA Term Action{TA} Term
+    -> Transition{TA} [ctor] .
+
+  sorts AtomicFormula{TA} True{TA} False{TA} Formula{TA} .
+  subsorts Equation{TA} AtomicTransition{TA} < AtomicFormula{TA} .
+  subsorts AtomicFormula{TA} Transition{TA} True{TA} False{TA} < Formula{TA} .
+  op true : -> True{TA} [ctor] .
+  op false : -> False{TA} [ctor] .
+  op not_ : Formula{TA} -> Formula{TA} [ctor prec 71] .
+  op _and_ : Formula{TA} Formula{TA} -> Formula{TA} [ctor assoc prec 75] .
+  op _xor_ : Formula{TA} Formula{TA} -> Formula{TA} [ctor assoc prec 77] .
+  op _or_ : Formula{TA} Formula{TA} -> Formula{TA} [ctor assoc prec 79] .
+  op _implies_ : Formula{TA} Formula{TA} -> Formula{TA} [ctor prec 81] .
+  op _iff_ : Formula{TA} Formula{TA} -> Formula{TA} [ctor assoc prec 83] .
+  op forall`{_`}_ : VariableSet Formula{TA} -> Formula{TA} [ctor prec 87] .
+  op exists`{_`}_ : VariableSet Formula{TA} -> Formula{TA} [ctor prec 87] .
+
+  *** formula declarations  - - - - - - - - - - - - - - - - - - - - - - - - - --
+  sort FrmDecl{TA} .
+  op frm_[_]. : Formula{TA} AttrSet -> FrmDecl{TA} [ctor] .
+endfm
+
+*** ----------------------------------------------------------------------------
+
+view TA/FrmDecl from TRIV to TA/FORMULA is
+  sort Elt to FrmDecl{TA} .
+endv
+
+*** ----------------------------------------------------------------------------
+
+fmod TA/FORMULA-DECL-SET is
+  protecting SET { TA/FrmDecl } *
+    (sort Set{TA/FrmDecl} to FrmDeclSet{TA},
+     sort NeSet{TA/FrmDecl} to NeFrmDeclSet{TA},
+     op empty : -> Set{TA/FrmDecl} to none,
+     op _,_ : Set{TA/FrmDecl} Set{TA/FrmDecl} -> Set{TA/FrmDecl} to __
+       [format (d ni d)]) .
+endfm
+
+********************************************************************************
+
+fmod TA/HORN-CLAUSE is
+  protecting TA/FORMULA .
+
+  *** condition  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  sort Condition{TA} .
+  subsorts Equation{TA} Transition{TA} True{TA} < Condition{TA} .
+  op _/\_ : Condition{TA} Condition{TA} -> Condition{TA} [ctor assoc id: true] .
+
+  *** Horn clauses  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  sort HornClause{TA} .
+  op cl_if_[_]. : AtomicFormula{TA} Condition{TA} AttrSet -> HornClause{TA} .
+endfm
+
+*** ----------------------------------------------------------------------------
+
+view TA/HornClause from TRIV to TA/HORN-CLAUSE is
+  sort Elt to HornClause{TA} .
+endv
+
+*** ----------------------------------------------------------------------------
+
+fmod TA/HORN-CLAUSE-SET is
+  protecting SET { TA/HornClause } *
+    (sort Set{TA/HornClause} to HClSet{TA},
+     sort NeSet{TA/HornClause} to NeHClSet{TA},
+     op empty : -> Set{TA/HornClause} to none,
+     op _,_ : Set{TA/HornClause} Set{TA/HornClause} -> Set{TA/HornClause}
+     to __ [format (d ni d)]) .
+  protecting TA/FORMULA-DECL-SET .
+  protecting EQ/OPS .
+
+  var  L : TA .
+  vars F F1 F2 : Formula{TA} .
+  var  Eq : Equation{TA} .
+  vars A B : Action{TA} .
+  var  Tn : Transition{TA} .
+  var  H : AtomicFormula{TA} .
+  var  C : Condition{TA} .
+  var  FDS : FrmDeclSet{TA} .
+  var  HCS : HClSet{TA} .
+  var  VS : VariableSet .
+  vars T LHS RHS : Term .
+  var  EC : EqCondition .
+  var  AtS : AttrSet .
+
+  *** head of a clause - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op head : Formula{TA} ~> AtomicFormula{TA} .
+  eq head(forall {VS} F) = head(F) .
+  eq head(F1 implies F2) = head(F2) .
+  eq head(H) = H .
+
+  *** body of a clause - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op body : Formula{TA} ~> Condition{TA} .
+  eq body(forall {VS} F) = body(F) .
+  eq body(F1 implies F2) = $body(F1) .
+  eq body(Eq) = true .
+  eq body(Tn) = true .
+
+  op $body : Formula{TA} ~> Condition{TA} .
+  eq $body(F1 and F2) = $body(F1) /\ $body(F2) .
+  eq $body(Eq) = Eq .
+  eq $body(Tn) = Tn .
+
+  *** extract Horn clauses from a set of formulae
+  op Horn-clauses : FrmDeclSet{TA} -> HClSet{TA} .
+  eq Horn-clauses(none) = none .
+  ceq Horn-clauses(frm F [AtS] . FDS)
+   = (cl H if C [AtS] .) Horn-clauses(FDS)
+   if H := head(F) /\ C := body(F) .
+  eq Horn-clauses(frm F [AtS] . FDS) = Horn-clauses(FDS) [owise] .
+
+  *** equational encoding of TA clauses  - - - - - - - - - - - - - - - - - - - -
+  op eqs : HClSet{TA} -> EquationSet .
+  eq eqs((none).HClSet{TA}) = none .
+  ceq eqs(cl Eq[L]{LHS = RHS} if C [AtS] . HCS)
+   = if (vars(RHS) ; free-vars(EC)) subset vars(LHS)
+     then (ceq LHS = RHS if EC [AtS] .)
+     else (ceq LHS = RHS if EC [AtS nonexec] .)
+     fi eqs(HCS)
+   if EC := eq-cond(C) .
+  ceq eqs(cl Trans[L]{LHS =(A)> RHS} if C [AtS] . HCS)
+   = if free-vars(EC) subset (vars(LHS) ; vars(RHS))
+     then (ceq '_=_>_[LHS, show(A), RHS] = 'true.AtomicSentence`{TA`}
+           if EC [AtS] .)
+     else (ceq '_=_>_[LHS, show(A), RHS] = 'true.AtomicSentence`{TA`}
+           if EC [AtS nonexec] .)
+     fi eqs(HCS)
+   if EC := eq-cond(C) .
+
+  op show : Action{TA} -> Term .
+  eq show(Act[L]{T}) = '`(_`)[T] .
+  eq show(A ; B) = '_;_[show(A), show(B)] .
+  eq show(A + B) = '_+_[show(A), show(B)] .
+  eq show(A *) = '_*[show(A)] .
+
+  op eq-cond : Condition{TA} -> Condition .
+  eq eq-cond(true) = nil .
+  eq eq-cond(Eq[L]{LHS = RHS} /\ C)
+   = (LHS = RHS) /\ eq-cond(C) .
+  eq eq-cond(Trans[L]{LHS =(A)> RHS} /\ C)
+   = ('_=_>_[LHS, show(A), RHS] = 'true.AtomicSentence`{TA`}) /\ eq-cond(C) .
+endfm
+
+********************************************************************************
+
+fmod TA/CMD is
+  protecting TA/LID .
+  protecting ATERM .
+
+  sort Cmd{TA} .
+  op Cmd[_]{reduce_} : TA ATerm -> Cmd{TA} [ctor] .
+  op Cmd[_]{check_} : TA ATerm -> Cmd{TA} [ctor] .
+  op Cmd[_]{set narrowing bound_} : TA Bound -> Cmd{TA} [ctor] .
+  op Cmd[_]{set unification bound_} : TA Bound -> Cmd{TA} [ctor] .
+  op Cmd[_]{set condition bound_} : TA Bound -> Cmd{TA} [ctor] .
+  op Cmd[_]{set rewrite bound_} : TA Bound -> Cmd{TA} [ctor] .
+endfm
+
+********************************************************************************

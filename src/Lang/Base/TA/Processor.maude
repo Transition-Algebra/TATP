@@ -1,0 +1,137 @@
+***( SpeX/Lang/Base/TA
+
+  This file is part of the SpeX-languages suite.
+
+  Copyright : (C) 2024 Simion Stoilow Institute of Mathematics of the
+              Romanian Academy (IMAR)
+  License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
+  Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
+
+)
+
+sload ../../../Processor.maude
+sload ./Tools.maude
+
+********************************************************************************
+
+view TA/SpecBody from TRIV to TA/SPEC-BODY is
+  sort Elt to SpecBody{TA} .
+endv
+
+*** ----------------------------------------------------------------------------
+
+view TA/Command from COMMAND to TA/READ is
+  sort Command to Cmd{TA} .
+  op command-annotations to term 'Command .
+  op read-command(T:ATerm) to term read-cmd(TA, T:ATerm) .
+endv
+
+*** ----------------------------------------------------------------------------
+
+mod TA/PROCESSOR { P :: PID } is
+  including  BASIC-PROCESSOR { P, TA/SpecBody, TA/SpecBody, TA/Command } .
+  protecting PID-NAME { P } .
+  protecting TA/PARSING-&-PRINTING .
+  protecting TA/REDUCE .
+  protecting TA/CHECK .
+
+  var  L : TA .
+  var  SB : SpecBody{TA} .
+  var  SAS : AnalysisState{TA} .
+  var  P : P$Pid .
+  var  I : Oid .
+  var  QIL : QidList .
+  vars T E : ATerm .
+  var  Atts : AttributeSet .
+  var  FDS : FrmDeclSet{TA} .
+  var  M : FModule .
+  var  RP : ResultPair .
+  var  B D W C R : Bound .
+
+  *** attributes  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op narrowing-bound : TA -> AttrName [ctor] .
+  op unification-bound : TA -> AttrName [ctor] .
+  op condition-bound : TA -> AttrName [ctor] .
+  op rewrite-bound : TA -> AttrName [ctor] .
+
+  *** auxiliary operations  - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op narrowing-bound : TA AttributeSet -> Bound .
+  ceq narrowing-bound(L, Atts) = B
+   if AttrValue(B) := (Atts).get(narrowing-bound(L)) .
+  eq narrowing-bound(L, Atts) = unbounded [owise] .
+
+  op unification-bound : TA AttributeSet -> Bound .
+  ceq unification-bound(L, Atts) = B
+   if AttrValue(B) := (Atts).get(unification-bound(L)) .
+  eq unification-bound(L, Atts) = unbounded [owise] .
+
+  op condition-bound : TA AttributeSet -> Bound .
+  ceq condition-bound(L, Atts) = B
+   if AttrValue(B) := (Atts).get(condition-bound(L)) .
+  eq condition-bound(L, Atts) = unbounded [owise] .
+
+  op rewrite-bound : TA AttributeSet -> Bound .
+  ceq rewrite-bound(L, Atts) = B
+   if AttrValue(B) := (Atts).get(rewrite-bound(L)) .
+  eq rewrite-bound(L, Atts) = unbounded [owise] .
+
+  *** rules  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  crl [TA:parse] :
+    < $[P] : PROC | running, Atts >
+    parse($[P], I, QIL, SB)
+   => < $[P] : PROC | running, Atts >
+    parsed(I, $[P], parse TA command (QIL) in SAS)
+   if SAS := AnalysisState[TA]{SB & none & none} .
+
+  *** executing TA commands  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - - - - -
+  crl [TA:reduce] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{reduce T}, SB)
+   => < $[P] : PROC | running, Atts >
+    processed(I, $[P], log('Reducing) '\s
+      (print term T given term-grammar(SB)) '\n
+      mk-page('Result: '\s printf(L, RP, spaced('\! ': '\o), M)))
+   if M := fmod(qid(name(P)), SB)
+      /\ FDS := read-formulae(L, sens(SB))
+      /\ C := condition-bound(L, Atts)
+      /\ R := rewrite-bound(L, Atts)
+      /\ RP := reduce(L, plain-term(T), M, Horn-clauses(FDS), C, R) .
+
+  crl [TA:check] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{check E}, SB)
+   => < $[P] : PROC | running, Atts >
+    processed(I, $[P], log('Checking) '\s
+      (print term E given sentence-grammar(SB)) '\n
+      mk-page('Result: '\s
+      if narrow-check(E, SB, D, W) then 'satisfied
+      else 'unknown '`( 'try 'larger 'bounds '`) fi))
+   if D := narrowing-bound(L, Atts)
+      /\ W := unification-bound(L, Atts) .
+
+  rl [TA:set-narrowing-bound] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{set narrowing bound B}, SB)
+   => < $[P] : PROC | running, (Atts).set(narrowing-bound(L), AttrValue(B)) >
+    processed(I, $[P]) .
+
+  rl [TA:set-unification-bound] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{set unification bound B}, SB)
+   => < $[P] : PROC | running, (Atts).set(unification-bound(L), AttrValue(B)) >
+    processed(I, $[P]) .
+
+  rl [TA:set-condition-bound] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{set condition bound B}, SB)
+   => < $[P] : PROC | running, (Atts).set(condition-bound(L), AttrValue(B)) >
+    processed(I, $[P]) .
+
+  rl [TA:set-rewrite-bound] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{set rewrite bound B}, SB)
+   => < $[P] : PROC | running, (Atts).set(rewrite-bound(L), AttrValue(B)) >
+    processed(I, $[P]) .
+endm
+
+********************************************************************************
