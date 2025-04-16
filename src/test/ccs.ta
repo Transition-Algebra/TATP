@@ -52,12 +52,12 @@ spec INSTITUTE is
   ax coin =/= coffee = true .
 
   ops Institute, Mathematician, CoffeeVM : () -> Process .
-  ax Institute =(tau)> (Mathematician | CoffeeVM) \ coin \ coffee .
+  ax Institute = (Mathematician | CoffeeVM) \ coin \ coffee .
   ax Mathematician =(tau)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) .
   ax CoffeeVM =(tau)> (rcv(coin) . snd(coffee) . CoffeeVM) .
 
   op thm-gen : () -> Bool .
-  ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute  .
+  ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute .
 endspec
 
 open INSTITUTE
