@@ -66,11 +66,12 @@ fmod TA/META-OPS is
  eq placeInContext([], T) = T .
  ceq placeInContext(Q[GTL], T) = Q[TL]
   if TL := placeInContext*(GTL, T) .
- eq placeInContext(C, T) = T [owise] .
+ eq placeInContext(T, T') = T [owise] .
 
  op placeInContext* : GTermList Term -> TermList .
  eq placeInContext*(empty, T) = empty .
- eq placeInContext*((C, GTL), T) = placeInContext(C, T), placeInContext*(GTL, T) .
+ eq placeInContext*((T, GTL), T') = T, placeInContext*(GTL, T') .
+ eq placeInContext*((C, GTL), T) = placeInContext(C, T), GTL .
 endfm
 
 view Substitution from TRIV to META-TERM is
