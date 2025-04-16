@@ -56,15 +56,10 @@ spec INSTITUTE is
   ax Mathematician =(tau)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) .
   ax CoffeeVM =(tau)> (rcv(coin) . snd(coffee) . CoffeeVM) .
 
-  op test : () -> Bool .
-  `` ax test = true if Institute =(tau)> (Mathematician | CoffeeVM) \ coin \ coffee [label: t1] .
-  ax test = true if Institute =((tau);(tau))> (((snd(coin) . rcv(coffee) . snd(theorem) . Mathematician)) | CoffeeVM) \ coin \ coffee [label: t2] .
+  op thm-gen : () -> Bool .
+  ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute  .
 endspec
 
 open INSTITUTE
-  reduce test
-  `` The result is `true' under the axiom t1 and `false' under the axiom t2.
-  `` It should be `true' in both cases.
-  `` The following query is satisfied, but checking it using narrowing takes more time.
-  check Institute =((tau);(tau))> (((snd(coin) . rcv(coffee) . snd(theorem) . Mathematician)) | CoffeeVM) \ coin \ coffee
+  reduce thm-gen
 close
