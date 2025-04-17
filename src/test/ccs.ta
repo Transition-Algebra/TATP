@@ -61,7 +61,11 @@ spec INSTITUTE is
 endspec
 
 open INSTITUTE
+  set rewrite bound 6
+  set condition bound 9
+
   reduce thm-gen
+
   echeck Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute
   using (comp comp
          star

@@ -60,7 +60,10 @@ fmod TA/META-OPS is
  eq apply(A *, SB) = apply(A, SB) * .
 
  op match : Module Action{TA} Action{TA} -> Substitution? .
- eq match(M, Act[TA]{T}, Act[TA]{T'}) = metaMatch(M, T, T', nil, 0) .
+ eq match(M, Act[TA]{T}, Act[TA]{T'}) = if metaMatch(M, T, T', nil, 0) :: Substitution
+                                        then metaMatch(M, T, T', nil, 0)
+                                        else metaMatch(M, T', T, nil, 0)
+                                        fi .
  eq match(M, A, B) = noMatch [owise] .
 
  op placeInContext : Context Term -> Term .
@@ -172,16 +175,17 @@ fmod TA/BOUNDED-RED is
      [SB?, CS', NSB'''] := solveCondition(M, HCS, CS, NCB, STS) .
  ceq solveCondition(M, HCS, SB, Trans[LA]{L =( A )> R} /\ COND, NSB, NCB, CS, STS) =
                                         if SB? :: Substitution
-                                        then solveCondition(M, HCS, SB?, COND, NSB', NCB, CS', STS)
-                                        else [noMatch, CS', NSB']
+                                        then solveCondition(M, HCS, SB?, COND, NSB''', NCB, CS', STS)
+                                        else [noMatch, CS', NSB''']
                                         fi
   if L' := apply(L, SB) /\
+     [L'', NSB'] := $boundedRed(M, L', HCS, NSB, NCB, L' & STS) /\
      R' := apply(R, SB) /\
+     [R'', NSB''] := $boundedRed(M, R', HCS, NSB', NCB, R' & STS) /\
      A' := apply(A, SB) /\
-     CS' := < L, A, R, SB, [L', A', NSB, NCB], empty > /\
-     [SB?, CS'', NSB'] := solveCondition(M, HCS, CS', NCB, [L', A'] & STS) .
+     CS' := < L, A, R'', SB, [L'', A', NSB'', NCB], empty > /\
+     [SB?, CS'', NSB'''] := solveCondition(M, HCS, CS', NCB, [L'', A'] & STS) .
  eq solveCondition(M, HCS, SB, COND, NSB, NCB, CS, STS) = [noMatch, CS, NSB] [owise] .
-     *** TODO: reduce right-hand side?
 
  op allMatches : Module Term Term Nat SubstitutionSet -> SubstitutionSet [memo] .
  ceq allMatches(M, T, PAT, N, SS) = SB, allMatches(M, T, PAT, s(N), SS)
@@ -261,17 +265,17 @@ fmod TA/BOUNDED-RED is
           fi .
  ceq allTermsOneStep(M, T, A *, PAT, HCS, NSB, NCB, SS, STS) =
                  STL
-                 if [T, A] in STS
+                 if false ***[T, A *] in STS
                  then mtSTL
                  else allTermsOneStep(M, T, A ; (A *), PAT, HCS, NSB, NCB, SS, [T, A *] & STS)
                  fi
   if SS' := allMatches(M, T, PAT, 0, SS) /\
      STL := createResults(SS', NSB) .
+ eq allTermsOneStep(M, T, (A *) ; A', PAT, HCS, NSB, NCB, SS, STS) =
+             allTermsOneStep(M, T, A', PAT, HCS, NSB, NCB, SS, STS)
+             allTermsOneStep(M, T, A, (A *) ; A', PAT, HCS, HCS, NSB, NCB, SS, STS) .
  eq allTermsOneStep(M, T, A ; A', PAT, HCS, NSB, NCB, SS, STS) =
-             if [T, A] in STS
-             then mtSTL
-             else allTermsOneStep(M, T, A, A', PAT, HCS, HCS, NSB, NCB, SS, [T, A] & STS)
-             fi .
+             allTermsOneStep(M, T, A, A', PAT, HCS, HCS, NSB, NCB, SS, STS) [owise] .
  eq allTermsOneStep(M, T, A, PAT, HCS, NSB, NCB, SS, STS) = allTermsOneStep(M, T, A, PAT, HCS, HCS, NSB, NCB, SS, STS) [owise] .
 
  op allTermsOneStep : Module Term Action{TA} Term HClSet{TA} HClSet{TA} Bound Bound SubstitutionSet SearchedTermSet -> SearchTupleList .
@@ -293,12 +297,32 @@ fmod TA/BOUNDED-RED is
              then NCB
              else minus(NCB, 1)
              fi /\
+     ASB := match(M, apply(A, SB), apply(A', SB)) /\
+     [SB', CS, NSB''] := solveCondition(M, HCS, (SB ; ASB), COND, NSB', NCB', mtCS, STS) /\
+     T' := placeInContext(CTXT, apply(M, R, SB')) /\
+     [T'', NSB'''] := $boundedRed(M, T', HCS, NSB', NCB', T' & STS) /\
+     SS' := allMatches(M, T'', PAT, 0, SS) /\
+     STL := createResults(SS', NSB'') .
+ *** ARR
+ ***(
+ ceq allTermsOneStepOneClause(M, T, A, PAT, HC, HCS, NSB, NCB, N, SS, STS) =
+                  STL allTermsOneStepOneClause(M, T, A, PAT, HC, HCS, NSB, NCB, s(N), (SS, SS'), STS)
+  if cl Trans[LA]{L =( A' )> R} if COND [AtS] . := HC /\
+     noZero(NSB) /\
+     (noZero(NCB) or COND == true) /\
+     {SB, CTXT} := metaXmatch(M, L, T, nil, 0, unbounded, N) /\
+     NSB' := minus(NSB, 1) /\
+     NCB' := if COND == true
+             then NCB
+             else minus(NCB, 1)
+             fi /\
      ASB := match(M, apply(A', SB), apply(A, SB)) /\
      [SB', CS, NSB''] := solveCondition(M, HCS, (SB ; ASB), COND, NSB', NCB', mtCS, STS) /\
      T' := placeInContext(CTXT, apply(M, R, SB')) /\
      [T'', NSB'''] := $boundedRed(M, T', HCS, NSB', NCB', T' & STS) /\
      SS' := allMatches(M, T'', PAT, 0, SS) /\
      STL := createResults(SS', NSB'') .
+     )
  eq allTermsOneStepOneClause(M, T, A, PAT, HC, HCS, NSB, NCB, N, SS, STS) = mtSTL [owise] .
 
  *** Extra argument for A ; B
@@ -493,38 +517,4 @@ fmod TA/CHECK is
 endfm
 
 ********************************************************************************
-
-eof
-
-mod TEST is
- pr TA/REDUCE .
-
- op m : -> FModule .
- eq m =
- fmod 'Th`[TA`]/'FG is
-   nil
-   sorts 'Nat .
-   none
-   (op '0 : nil -> 'Nat [none] .
-   op 'f_ : 'Nat -> 'Nat [none] .
-   op 'g_ : 'Nat -> 'Nat [none] .
-   op 's_ : 'Nat -> 'Nat [none] .)
-   none
-   none
-endfm .
-
- op hcs : -> HClSet{TA} .
- eq hcs = cl Eq[TA]{'f_['0.Nat] = '0.Nat} if true[none].
-cl Eq[TA]{'f_['s_['N:Nat]] = 's_['f_['N:Nat]]} if Trans[TA]{'g_['N:Nat]
-=(Act[TA]{'N:Nat})> 'N:Nat}[none].
-cl Trans[TA]{'M:Nat =(Act[TA]{'K:Nat})> 'N:Nat} if Trans[TA]{'M:Nat
-=(Act[TA]{'0.Nat} ; Act[TA]{'K:Nat})> 'N:Nat}[none].
-cl Trans[TA]{'g_['0.Nat] =(Act[TA]{'0.Nat})> '0.Nat} if true[none].
-cl Trans[TA]{'g_['s_['N:Nat]] =(Act[TA]{'0.Nat})> 's_['g_['N:Nat]]} if
-Eq[TA]{'f_['N:Nat] = 'N:Nat}[none].
-cl Trans[TA]{'s_['M:Nat] =(Act[TA]{'s_['K:Nat]})> 's_['N:Nat]} if
-Trans[TA]{'M:Nat =(Act[TA]{'K:Nat})> 'N:Nat}[none]. .
-endm
-
-red reduce(TA,'f_['s_['s_['s_['s_['s_['s_['s_['0.Nat]]]]]]]],m,hcs, unbounded, unbounded) .
 
