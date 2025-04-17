@@ -3,7 +3,7 @@
   This file is part of CommonLibs (CL), a suite of Maude 3 libraries
   that extend the predefined data modules from the standard prelude.
 
-  Copyright : (C) 2023, 2024 Simion Stoilow Institute of Mathematics
+  Copyright : (C) 2023-2025 Simion Stoilow Institute of Mathematics
               of the Romanian Academy (IMAR)
   License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
   Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
@@ -23,6 +23,8 @@ fmod EQUATION/OPS is
   var  TP : Type .
   var  EC : EqCondition .
   var  AtS : AttrSet .
+  var  Lb : Qid .
+  var  Lb? : [Qid] .
   var  M : Module .
   var  I : Nat .
 
@@ -34,6 +36,15 @@ fmod EQUATION/OPS is
   op rhs : Equation -> Term .
   eq rhs(eq LHS = RHS [AtS] .) = RHS .
   eq rhs(ceq LHS = RHS if EC [AtS] .) = RHS .
+
+  *** attributes  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op ats : Equation -> AttrSet .
+  eq ats(eq LHS = RHS [AtS] .) = AtS .
+  eq ats(ceq LHS = RHS if EC [AtS] .) = AtS .
+
+  op labelled : Equation [Qid] -> Bool .
+  ceq labelled(E, Lb) = true if label(Lb) AtS := ats(E) .
+  eq labelled(E, Lb?) = false [owise] .
 
   *** module equations on elements of a given kind  - - - - - - - - - - - - - --
   op getEqs : Module Term Nat -> EquationSet .
@@ -133,6 +144,12 @@ fmod EQ-QUERY is
   eq red(M, Q) = Q [owise] .
 endfm
 
+*** ----------------------------------------------------------------------------
+
+view EqQuery from TRIV to EQ-QUERY is
+  sort Elt to EqQuery .
+endv
+
 ********************************************************************************
 
 smod NARROWING is
@@ -145,6 +162,9 @@ smod NARROWING is
   var  PS : PositionSet .
   var  V : Variable .
   var  T : Term .
+  var  Lb : Qid .
+  var  LbL : QidList .
+  var  AtS : AttrSet .
   vars N I J J' : Nat .
   vars D W : Bound .
   var  M : Module .
@@ -191,65 +211,67 @@ smod NARROWING is
   *** narrowing problems  - - - - - - - - - - - - - - - - - - - - - - - - - - --
   sort NarrowingProblem .
 
-  op Solve[_,_]{_given_} : Bound Bound EqQuery Module -> NarrowingProblem
-    [ctor format(! d o d d ! d o ! o ! o)] .
+  op Solve[_,_,_]{_given_} : QidList Bound Bound EqQuery Module
+    -> NarrowingProblem
+    [ctor format(! d o d d d d ! d o ! o ! o)] .
 
-  op Solve[_,_]{_given_, with
+  op Solve[_,_,_]{_given_, with
       var ids up to_and
       computed answer_}
-    : Bound Bound EqQuery Module Nat Substitution
+    : QidList Bound Bound EqQuery Module Nat Substitution
     -> NarrowingProblem
-    [ctor format(! d o d d ! d o ! o ! s n++i d s s os s! ni d os s! --)] .
+    [ctor format(! d o d d d d ! d o ! o ! s n++i d s s os s! ni d os s! --)] .
 
-  op Solve[_,_]{_then_given_, with
+  op Solve[_,_,_]{_then_given_, with
       unifier {_,_},
       var ids up to_,and
       computed answer_}
-    : Bound Bound PrimitiveEqQuery EqQuery Module Substitution Nat Nat
+    : QidList Bound Bound PrimitiveEqQuery EqQuery Module Substitution Nat Nat
       Substitution -> NarrowingProblem
-    [ctor format(! d o d d ! d o ! os s! o ! s n++i s! o ! o s! d ni d s s
+    [ctor format(! d o d d d d ! d o ! os s! o ! s n++i s! o ! o s! d ni d s s
       os s! d ni d os s! --)] .
 
-  op Solve[_,_]{_[_/_] then_given_in_, with
+  op Solve[_,_,_]{_[_/_] then_given_in_, with
       unifier {_,_,_},
       var ids up to_, and
       computed answer_}
-    : Bound Bound PrimitiveEqQuery Term Position EqQuery Equation Module
+    : QidList Bound Bound PrimitiveEqQuery Term Position EqQuery Equation Module
       Substitution Substitution Nat Nat Substitution -> NarrowingProblem
-    [ctor format(! d o d d ! d o s! o ! o ! s os s! os s! os ! s n++i s! o
+    [ctor format(! d o d d d d ! d o s! o ! o ! s os s! os s! os ! s n++i s! o
       ! o ! o ! d ni d d d so ! s ni s so ! --)] .
 
   op Solved{_} : Substitution -> NarrowingProblem [ctor format(! d o ! d)] .
 
-  eq Solve[D, W]{true given M} = Solved{none} .
+  eq Solve[LbL, D, W]{true given M} = Solved{none} .
 
-  eq Solve[D, W]{true given M, with
+  eq Solve[LbL, D, W]{true given M, with
       var ids up to I and
       computed answer S} = Solved{S} .
 
   *** initialization rules  - - - - - - - - - - - - - - - - - - - - - - - - - --
   rl [ready] :
-      Solve[D, W]{Q given M}
-   => Solve[D, W]{Q given M, with
+      Solve[LbL, D, W]{Q given M}
+   => Solve[LbL, D, W]{Q given M, with
         var ids up to 0 and
         computed answer id-substitution(vars(Q))} .
 
   *** unification rules  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   crl [unify] :
-      Solve[D, W]{PQ /\ Q given M, with
+      Solve[LbL, D, W]{PQ /\ Q given M, with
         var ids up to I and
         computed answer S}
-   => Solve[D, W]{apply(U, Q) given M, with
+   => Solve[LbL, D, W]{apply(U, Q) given M, with
         var ids up to J and
         computed answer (S comp U)}
    if {U, J} UPS := unifiers(lhs(PQ) =? rhs(PQ), M, I, W) .
 
   *** narrowing rules  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   crl [narrow] :
-      Solve[D, W]{PQ /\ Q given M, with
+      Solve[LbL, D, W]{PQ /\ Q given M, with
         var ids up to I and
         computed answer S}
-   => Solve[p D, W]{apply(LS, Q)
+   => Solve[if LbL :: NeQidList then tail(LbL) else nil fi, p D, W]{
+        apply(LS, Q)
         /\ apply(LS, PQ)[apply(RS, rhs(E)) / P]
         /\ apply(RS, qond(E)) given M, with
         var ids up to J and
@@ -258,14 +280,15 @@ smod NARROWING is
       /\ P PS := nv-positions(PQ)
       /\ T := PQ[P]
       /\ E ES := getEqs(M, T, I)
+      /\ LbL :: NeQidList implies labelled(E, head(LbL))
       /\ {LS, RS, J} UTS := disjoint-unifiers(T =? lhs(E), M, I, W) .
 
   *** simplification rules  - - - - - - - - - - - - - - - - - - - - - - - - - --
   rl [red] :
-      Solve[D, W]{Q given M, with
+      Solve[LbL, D, W]{Q given M, with
         var ids up to I and
         computed answer S}
-   => Solve[D, W]{red(M, Q) given M, with
+   => Solve[LbL, D, W]{red(M, Q) given M, with
         var ids up to I and
         computed answer S} .
 
@@ -280,7 +303,77 @@ smod NARROWING is
   sd step := narrow ; simplify .
 
   strat narrowing : @ NarrowingProblem .
-  sd narrowing := init ; step * ; match Solved{S:Substitution} .
+  sd narrowing
+   := init ; step !
+      ; (match Solve[LbL:QidList, 0, W:Bound]{
+          Q:EqQuery given M:Module, with
+          var ids up to I:Nat and
+          computed answer S:Substitution}
+        | match Solved{S:Substitution}) .
+
+  strat narrow-check : @ NarrowingProblem .
+  sd narrow-check := init ; step * ; match Solved{S:Substitution} .
 endsm
+
+********************************************************************************
+
+fmod META-NP is
+  protecting EQ-QUERY .
+
+  vars LbL D W Q M I S : Term .
+
+  op onp-undef : -> [EqQuery] [ctor] .
+
+  op onp-query : Term ~> EqQuery .
+  eq onp-query(
+      'Solve`[_`,_`,_`]`{_given_`,with`var`ids`up`to_and`computed`answer_`}
+      [LbL, D, W, Q, M, I, S])
+   = downTerm(Q, (onp-undef).[EqQuery]) .
+  eq onp-query('Solved`{_`}[S])
+   = (true).EqQuery .
+endfm
+
+*** ----------------------------------------------------------------------------
+
+fmod META-NARROWING is
+  protecting META-NP .
+  protecting LIST { EqQuery } .
+
+  var  LbL : QidList .
+  vars D W : Bound .
+  vars Q Q' : EqQuery .
+  vars M NM : Module .
+  vars NP : Term .
+  var  RP : ResultPair .
+  var  RP? : ResultPair? .
+  var  N : Nat .
+
+  *** check  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op narrow-check : QidList Bound Bound EqQuery Module ~> Bool .
+  ceq narrow-check(LbL, D, W, Q, M) = true
+   if NP := 'Solve`[_`,_`,_`]`{_given_`}[
+              upTerm(LbL), upTerm(D), upTerm(W), upTerm(Q), upTerm(M)]
+      /\ NM := upModule('NARROWING, false)
+      /\ RP := metaSrewrite(NM, NP, 'narrow-check[[empty]], breadthFirst, 0) .
+  eq narrow-check(LbL, D, W, Q, M) = false [owise] .
+
+  *** narrow  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op narrow : QidList Bound Bound EqQuery Module ~> List{EqQuery} .
+  eq narrow(LbL, D, W, Q, M) = narrow(LbL, D, W, Q, M, 0) .
+
+  op narrow : QidList Bound Bound EqQuery Module Nat ~> List{EqQuery} .
+  ceq narrow(LbL, D, W, Q, M, N)
+   = $narrow(LbL, D, W, Q, M, N, RP?)
+   if NP := 'Solve`[_`,_`,_`]`{_given_`}[
+              upTerm(LbL), upTerm(D), upTerm(W), upTerm(Q), upTerm(M)]
+      /\ NM := upModule('NARROWING, false)
+      /\ RP? := metaSrewrite(NM, NP, 'narrowing[[empty]], breadthFirst, N) .
+
+  op $narrow : QidList Bound Bound EqQuery Module Nat ResultPair?
+    -> List{EqQuery} .
+  ceq $narrow(LbL, D, W, Q, M, N, RP) = Q' narrow(LbL, D, W, Q, M, s N)
+   if Q' := onp-query(getTerm(RP)) .
+  eq $narrow(LbL, D, W, Q, M, N, RP?) = nil [owise] .
+endfm
 
 ********************************************************************************

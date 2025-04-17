@@ -2,8 +2,8 @@
 
   This file is part of the SpeX-languages suite.
 
-  Copyright : (C) 2024 Simion Stoilow Institute of Mathematics of the
-              Romanian Academy (IMAR)
+  Copyright : (C) 2024, 2025 Simion Stoilow Institute of Mathematics
+              of the Romanian Academy (IMAR)
   License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
   Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
 
@@ -243,6 +243,8 @@ fmod TA/LANGUAGE is
        'Command
          ::= "reduce_" : 'Term [format('b 'so 'd)]
           |  "check_" : 'Sentence [format('b 'so 'd)]
+          |  "echeck_using_" : 'Sentence 'LabelList [format('b 'so 'sb 'so 'd)]
+          |  "echeck_using(_)" : 'Sentence 'LabelList [format('b 'so 'sb 'd 'so 'b 'o)]
           |  "set narrowing bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set unification bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set condition bound_" : 'Bound [format('b 's 's 'so 'd)]
@@ -251,6 +253,8 @@ fmod TA/LANGUAGE is
          ::= bubble "term" [balanced-parentheses]
        'Sentence
          ::= bubble "sentence" [balanced-parentheses]
+       'LabelList
+         ::= bubble "labelList" [exclude ("(" ")")]
        'Bound
          ::= token "bound"
      endgr .
@@ -280,7 +284,7 @@ fmod TA/READ is
   vars EVD : Constant .
   vars S O Lb : AConstant .
   var  V : AVariable .
-  vars SL1 SL2 OL1 OL2 LbL1 LbL2 A B : ATerm .
+  vars SL1 SL2 OL1 OL2 LbL LbL1 LbL2 A B : ATerm .
   vars E E1 E2 VD VN VL VNL VNL1 VNL2 AtL AtL1 AtL2 T T1 T2 : ATerm .
   var  TL : ATermList .
   var  AtS : AttrSet .
@@ -466,6 +470,10 @@ fmod TA/READ is
    = Cmd[L]{reduce T} .
   eq read-cmd(L, {'check_[E] : 'Command})
    = Cmd[L]{check E} .
+  eq read-cmd(L, {'echeck_using_[E, LbL] : 'Command})
+   = Cmd[L]{echeck E using read-qids(LbL)} .
+  eq read-cmd(L, {'echeck_using`(_`)[E, LbL] : 'Command})
+   = Cmd[L]{echeck E using read-qids(LbL)} .
   eq read-cmd(L, {'set`narrowing`bound_[B] : 'Command})
    = Cmd[L]{set narrowing bound read-bound(L, B)} .
   eq read-cmd(L, {'set`unification`bound_[B] : 'Command})
@@ -1169,6 +1177,18 @@ fmod TA/PARSING is
   eq analyse L command {'check_[$E] : 'Command}
    = try { 'check_[analyse L sentence ($E)] : 'Command } .
 
+  eq analyse L command {'echeck_using_[$E, $LbL] : 'Command}
+   = try { 'echeck_using_[
+        analyse L sentence ($E),
+        solve L label-list ($LbL)
+      ] : 'Command } .
+
+  eq analyse L command {'echeck_using`(_`)[$E, $LbL] : 'Command}
+   = try { 'echeck_using`(_`)[
+        analyse L sentence ($E),
+        solve L label-list ($LbL)
+      ] : 'Command } .
+
   eq analyse L command {'set`narrowing`bound_[$B] : 'Command}
    = try { 'set`narrowing`bound_[analyse L bound ($B)] : 'Command } .
 
@@ -1186,6 +1206,12 @@ fmod TA/PARSING is
 
   eq analyse L term {$[T] : 'Term} in SAS
    = decode input (read-qids(T) : anyType) given term-grammar(SAS) .
+
+  *** solve label-list  - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op solve_label-list : TA -> AnalysisAction{TA} .
+
+  eq solve L label-list {$[LbL] : 'LabelList}
+   = return {LbL : 'LabelList} .
 
   *** analyse bound  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op analyse_bound : TA -> AnalysisAction{TA} .

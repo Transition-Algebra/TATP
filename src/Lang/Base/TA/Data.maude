@@ -245,14 +245,14 @@ fmod TA/HORN-CLAUSE-SET is
   *** body of a clause - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op body : Formula{TA} ~> Condition{TA} .
   eq body(forall {VS} F) = body(F) .
-  eq body(F1 implies F2) = $body(F1) .
+  eq body(F1 implies F2) = cond(F1) .
   eq body(Eq) = true .
   eq body(Tn) = true .
 
-  op $body : Formula{TA} ~> Condition{TA} .
-  eq $body(F1 and F2) = $body(F1) /\ $body(F2) .
-  eq $body(Eq) = Eq .
-  eq $body(Tn) = Tn .
+  op cond : Formula{TA} ~> Condition{TA} .
+  eq cond(F1 and F2) = cond(F1) /\ cond(F2) .
+  eq cond(Eq) = Eq .
+  eq cond(Tn) = Tn .
 
   *** extract Horn clauses from a set of formulae
   op Horn-clauses : FrmDeclSet{TA} -> HClSet{TA} .
@@ -303,6 +303,7 @@ fmod TA/CMD is
   sort Cmd{TA} .
   op Cmd[_]{reduce_} : TA ATerm -> Cmd{TA} [ctor] .
   op Cmd[_]{check_} : TA ATerm -> Cmd{TA} [ctor] .
+  op Cmd[_]{echeck_using_} : TA ATerm QidList -> Cmd{TA} [ctor] .
   op Cmd[_]{set narrowing bound_} : TA Bound -> Cmd{TA} [ctor] .
   op Cmd[_]{set unification bound_} : TA Bound -> Cmd{TA} [ctor] .
   op Cmd[_]{set condition bound_} : TA Bound -> Cmd{TA} [ctor] .

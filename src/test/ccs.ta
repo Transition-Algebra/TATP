@@ -34,11 +34,11 @@ spec CCS is
   ax tau =/= rcv(C) = true .
   ax rcv(C) =/= tau = true .
 
-  ax (A . P) =(A)> P .
-  ax (P + Q) =(A)> P' if P =(A)> P' .
-  ax (P | Q) =(A)> (P' | Q) if P =(A)> P' .
-  ax (P | Q) =(tau)> (P' | Q') if P =(snd(C))> P' and Q =(rcv(C))> Q' .
-  ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true .
+  ax (A . P) =(A)> P [label: act] .
+  ax (P + Q) =(A)> P' if P =(A)> P' [label: sum] .
+  ax (P | Q) =(A)> (P' | Q) if P =(A)> P' [label: com] .
+  ax (P | Q) =(tau)> (P' | Q') if P =(snd(C))> P' and Q =(rcv(C))> Q' [label: com] .
+  ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true [label: res] .
 endspec
 
 spec INSTITUTE is
@@ -53,8 +53,8 @@ spec INSTITUTE is
 
   ops Institute, Mathematician, CoffeeVM : () -> Process .
   ax Institute = (Mathematician | CoffeeVM) \ coin \ coffee .
-  ax Mathematician =(tau)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) .
-  ax CoffeeVM =(tau)> (rcv(coin) . snd(coffee) . CoffeeVM) .
+  ax Mathematician =(tau)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) [label: def-M] .
+  ax CoffeeVM =(tau)> (rcv(coin) . snd(coffee) . CoffeeVM) [label: def-C] .
 
   op thm-gen : () -> Bool .
   ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute .
@@ -62,4 +62,16 @@ endspec
 
 open INSTITUTE
   reduce thm-gen
+  echeck Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute
+  using (comp comp
+         star
+         res res com act
+         star comp
+         res res com def-M
+         star comp
+         res res com def-C
+         star comp
+         res res com act act
+         star comp
+         res res com act act)
 close

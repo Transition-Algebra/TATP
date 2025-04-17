@@ -40,10 +40,12 @@ mod TA/PROCESSOR { P :: PID } is
   var  SAS : AnalysisState{TA} .
   var  P : P$Pid .
   var  I : Oid .
-  var  QIL : QidList .
+  vars QIL LbL : QidList .
   vars T E : ATerm .
   var  Atts : AttributeSet .
+  var  F? : [Condition{TA}] .
   var  FDS : FrmDeclSet{TA} .
+  var  LQ : List{EqQuery} .
   var  M : FModule .
   var  RP : ResultPair .
   var  B D W C R : Bound .
@@ -104,10 +106,36 @@ mod TA/PROCESSOR { P :: PID } is
     processed(I, $[P], log('Checking) '\s
       (print term E given sentence-grammar(SB)) '\n
       mk-page('Result: '\s
-      if narrow-check(E, SB, D, W) then 'satisfied
-      else 'unknown '`( 'try 'larger 'bounds '`) fi))
-   if D := narrowing-bound(L, Atts)
+        if F? :: Condition{TA}
+        then
+          if narrow-check(F?, SB, D, W) then 'satisfied
+          else 'unknown '`( 'try 'larger 'bounds '`) fi
+        else 'cannot 'check: 'not 'a 'condition fi))
+   if F? := cond(read-formula(L, E))
+      /\ D := narrowing-bound(L, Atts)
       /\ W := unification-bound(L, Atts) .
+
+  crl [TA:echeck-using] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{echeck E using LbL}, SB)
+   => < $[P] : PROC | running, Atts >
+    processed(I, $[P], log('Checking) '\s
+      (print term E given sentence-grammar(SB)) '\n
+      mk-page('Result: '\s
+        if F? :: Condition{TA}
+        then
+          if LQ == nil
+          then 'cannot 'use 'these 'clauses
+          else if occurs(true, LQ)
+               then 'satisfied
+               else 'reduced 'to 'the 'following 'open
+                    if size(LQ) == 1 then 'problem: else 'problems: fi '\n
+                    intercalate('\n '\n, print2(L, LQ, eq-mod('TA, SB))) fi fi
+        else 'cannot 'check: 'not 'a 'condition fi))
+   if F? := cond(read-formula(L, E))
+      /\ D := narrowing-bound(L, Atts)
+      /\ W := unification-bound(L, Atts)
+      /\ LQ := narrow(F?, LbL, SB, D, W) .
 
   rl [TA:set-narrowing-bound] :
     < $[P] : PROC | executing I command, Atts >

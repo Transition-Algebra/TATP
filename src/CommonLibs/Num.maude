@@ -3,7 +3,7 @@
   This file is part of CommonLibs (CL), a suite of Maude 3 libraries
   that extend the predefined data modules from the standard prelude.
 
-  Copyright : (C) 2020-2023 Simion Stoilow Institute of Mathematics
+  Copyright : (C) 2020-2025 Simion Stoilow Institute of Mathematics
               of the Romanian Academy (IMAR)
   License   : GNU General Public License v2.0 or later (GPL-2.0-or-later)
   Author    : Ionut Tutu <Ionut.Tutu@imar.ro>
@@ -41,6 +41,15 @@ fmod BOUND/OPS is
   op _>_ : Bound Bound -> Bool [ditto] .
   eq unbounded > N = true .
   eq B > unbounded = false .
+
+  *** min  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op min : [Bound] [Bound] -> [Bound] [ditto] .
+  eq min(unbounded, N) = N .
+  eq min(unbounded, unbounded) = unbounded .
+
+  *** max  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op max : [Bound] [Bound] -> [Bound] [ditto] .
+  eq max(unbounded, B) = unbounded .
 
   *** p_  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op p_ : Bound -> Bound [ditto] .

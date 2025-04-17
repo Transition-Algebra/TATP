@@ -108,7 +108,7 @@ fmod STRING/OPS is
   *** replicate  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op replicate : String Nat -> String .
   eq replicate(S, 0) = "" .
-  eq replicate(S, s N) = S + replicate(S, N) .
+  ceq replicate(S, s N) = S + R if R := replicate(S, N) .
 endfm
 
 ********************************************************************************

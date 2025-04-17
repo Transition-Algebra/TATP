@@ -11,6 +11,7 @@
 )
 
 sload ./Language.maude
+sload ../../../CommonLibs/Num.maude
 sload ../../../CommonLibs/Narrowing.maude
 
 set print attribute off .
@@ -404,11 +405,14 @@ fmod TA/CHECK is
   protecting TA/READ .
   protecting TA/SHOW .
   protecting TA/HORN-CLAUSE-SET .
+  protecting META-NARROWING .
+  protecting BOUND/OPS .
+  protecting PRINTING/COMPAT .
 
   var  L : TA .
   var  SB : SpecBody{TA} .
   vars H QI : Qid .
-  var  QIL : QidList .
+  vars QIL LbL : QidList .
   var  IL : ImportList .
   var  S : Sort .
   var  SS TS : SortSet .
@@ -417,22 +421,27 @@ fmod TA/CHECK is
   var  MAS : MembAxSet .
   var  EQS : EquationSet .
   vars D W : Bound .
-  var  NM : Module .
-  vars NP X Y A B : Term .
+  vars M NM : Module .
+  vars NP X Y A B LHS RHS T : Term .
   var  E : ATerm .
   var  HCS : HClSet{TA} .
+  var  C : Condition{TA} .
+  var  C? : [Condition{TA}] .
+  vars Q Q1 Q2 : EqQuery .
+  var  LQ : List{EqQuery} .
   var  RP : ResultPair .
 
   *** check  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  op narrow-check : ATerm SpecBody{TA} Bound Bound -> Bool .
-  ceq narrow-check(E, SB, D, W) = true
-  if NP := 'Solve`[_`,_`]`{_given_`}[
-        upTerm(D), upTerm(W),
-        '_=q=_[upTerm(plain-term(E)), upTerm('true.AtomicSentence`{TA`})],
-        upTerm(eq-mod('TA, SB))]
-     /\ NM := upModule('NARROWING, false)
-     /\ RP := metaSrewrite(NM, NP, 'narrowing[[empty]], breadthFirst, 0) .
-  eq narrow-check(E, SB, D, W) = false [owise] .
+  op narrow-check : Condition{TA} SpecBody{TA} Bound Bound ~> Bool .
+  eq narrow-check(C, SB, D, W)
+   = narrow-check(nil, D, W, query(eq-cond(C)), eq-mod('TA, SB)) .
+  eq narrow-check(C?, SB, D, W) = false [owise] .
+
+  *** narrow  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op narrow : Condition{TA} QidList SpecBody{TA} Bound Bound ~> List{EqQuery} .
+  eq narrow(C, LbL, SB, D, W)
+   = narrow(LbL, min(D, size(LbL)), W, query(eq-cond(C)), eq-mod('TA, SB)) .
+  eq narrow(C?, LbL, SB, D, W) = nil [owise] .
 
   *** eq-mod  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op eq-mod : Qid SpecBody{TA} ~> FModule .
@@ -452,18 +461,35 @@ fmod TA/CHECK is
   ceq act-eqs(L, S ; SS)
    = (ceq '_=_>_[X, '_;_[A, B], Y] = 'true.AtomicSentence`{TA`}
       if '_=_>_[X, A, var('K, S)] = 'true.AtomicSentence`{TA`}
-      /\ '_=_>_[var('K, S), B, Y] = 'true.AtomicSentence`{TA`} [nonexec] .)
+         /\ '_=_>_[var('K, S), B, Y] = 'true.AtomicSentence`{TA`}
+      [nonexec label('comp)] .)
      (ceq '_=_>_[X, '_+_[A, B], Y] = 'true.AtomicSentence`{TA`}
-      if '_=_>_[X, A, Y] = 'true.AtomicSentence`{TA`} [none] .)
+      if '_=_>_[X, A, Y] = 'true.AtomicSentence`{TA`} [label('choice)] .)
      (ceq '_=_>_[X, '_+_[A, B], Y] = 'true.AtomicSentence`{TA`}
-      if '_=_>_[X, B, Y] = 'true.AtomicSentence`{TA`} [none] .)
+      if '_=_>_[X, B, Y] = 'true.AtomicSentence`{TA`} [label('choice)] .)
      (ceq '_=_>_[X, '_*[A], Y] = 'true.AtomicSentence`{TA`}
-      if X = Y [none] .)
+      if X = Y [label('star)] .)
      (ceq '_=_>_[X, '_*[A], Y] = 'true.AtomicSentence`{TA`}
-      if '_=_>_[X, '_;_[A, '_*[A]], Y] = 'true.AtomicSentence`{TA`} [none] .)
+      if '_=_>_[X, '_;_[A, '_*[A]], Y] = 'true.AtomicSentence`{TA`}
+      [label('star)] .)
      act-eqs(L, SS)
    if X := var('X, S) /\ Y := var('Y, S)
       /\ A := 'A:Action`{TA`} /\ B := 'B:Action`{TA`} .
+
+  *** print  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op print : TA EqQuery Module -> QidList .
+  eq print(L, LHS =q= RHS, M)
+   = (print term LHS given (M & none))
+     if RHS == 'true.AtomicSentence`{TA`} then nil
+     else '\s '\! '= '\s '\o (print term RHS given (M & none)) fi .
+  eq print(L, true, M) = '\! 'true '\o .
+  eq print(L, false, M) = '\! 'false '\o .
+  eq print(L, Q1 /\ Q2, M)
+   = print(L, Q1, M) '\s '\! 'and '\s '\o print(L, Q2, M) .
+
+  op print2 : TA List{EqQuery} Module -> QidList2 .
+  eq print2(L, nil, M) = nil .
+  eq print2(L, Q LQ, M) = :[print(L, Q, M)] print2(L, LQ, M) .
 endfm
 
 ********************************************************************************
