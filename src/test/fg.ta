@@ -16,14 +16,11 @@ spec FG is
 endspec
 
 open FG
-set condition bound 10
 `` The following is optional when we do not need to impose any
 `` bounds on the number of rewrite steps:
-set rewrite bound infinity
-reduce f s s 0
-reduce f s s s s s s s s 0
+set rewrite bound 10
 set condition bound infinity
-reduce f s s s s s s s s 0
+reduce f s s 0
 `` The result should be 2, i.e. s s 0.
 `` In general, for any natural number N, f N should evaluate to N.
 set narrowing bound 7
