@@ -64,6 +64,12 @@ fmod OP-DECL-SET is
   op op_:_->_not-in_ : Qid TypeList Type OpDeclSet -> Bool .
   eq op QI : TPL -> TP not-in ODS = not (op QI : TPL -> TP in ODS) .
 
+  *** same domains  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op same-domains : TypeList -> Bool .
+  eq same-domains(TP TP TPL) = same-domains(TP TPL) .
+  eq same-domains(TP) = true .
+  eq same-domains(TPL) = false [owise] .
+
   *** symbol (of an op-declaration)  - - - - - - - - - - - - - - - - - - - - - -
   op symbol : OpDecl -> Qid .
   eq symbol(op QI : TPL -> TP [AtS] .) = QI .

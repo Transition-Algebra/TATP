@@ -981,8 +981,16 @@ fmod TA/PARSING is
         analyse L op-attributes [QIS : TPL -> TP] (AtL2)
       ] : 'AttrList } .
   eq analyse L op-attributes [QIS : TPL -> TP] {CA : 'Attr} in SAS
-   = (check (read-attributes(TA, {CA : 'Attr}) is equational
-        implies TPL == TP TP)
+   = (check (read-attributes(TA, {CA : 'Attr}) == assoc
+        implies same-domains(TPL TP))
+      or-else
+      fail (emph(print term CA given op-attr-grammar(L))
+        'attribute 'can 'be 'declared 'only 'for 'binary 'operation
+        'symbols 'whose 'domain 'sorts 'and 'range 'sort 'are 'the 'same,
+        (at term CA given op-attr-grammar(L), include context)))
+     and-then
+     (check (read-attributes(TA, {CA : 'Attr}) == comm
+        implies same-domains(TPL))
       or-else
       fail (emph(print term CA given op-attr-grammar(L))
         'attribute 'can 'be 'declared 'only 'for 'binary 'operation
@@ -990,7 +998,7 @@ fmod TA/PARSING is
         (at term CA given op-attr-grammar(L), include context)))
      and-then return {CA : 'Attr} in SAS .
   eq analyse L op-attributes [QIS : TPL -> TP] {'id:[$T] : 'Attr} in SAS
-   = (check (TPL == TP TP)
+   = (check same-domains(TPL TP)
       or-else
       fail (emph('id) 'attribute
         'can 'be 'declared 'only 'for 'binary 'operation 'symbols
