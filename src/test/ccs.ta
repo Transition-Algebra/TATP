@@ -11,8 +11,8 @@ spec CCS is
   op rcv : Channel -> Action .
   op tau : () -> Action .
 
-  op _=/=_ : Channel Channel -> Bool .
-  op _=/=_ : Action Action -> Bool .
+  op _=/=_ : Channel Channel -> Bool [comm] .
+  op _=/=_ : Action Action -> Bool [comm] .
 
   sort Process .
   op 0 : () -> Process .
@@ -27,12 +27,9 @@ spec CCS is
 
   ax snd(C) =/= rcv(C') = true .
   ax snd(C) =/= snd(C') = C =/= C' .
-  ax rcv(C) =/= snd(C') = true .
   ax rcv(C) =/= rcv(C') = C =/= C' .
   ax tau =/= snd(C) = true .
-  ax snd(C) =/= tau = true .
   ax tau =/= rcv(C) = true .
-  ax rcv(C) =/= tau = true .
 
   ax (A . P) =(A)> P [label: act] .
   ax (P + Q) =(A)> P' if P =(A)> P' [label: sum] .
@@ -46,10 +43,7 @@ spec INSTITUTE is
   ops theorem, coffee, coin : () -> Channel .
   ax theorem =/= coffee = true .
   ax theorem =/= coin = true .
-  ax coffee =/= theorem = true .
   ax coffee =/= coin = true .
-  ax coin =/= theorem = true .
-  ax coin =/= coffee = true .
 
   ops Institute, Mathematician, CoffeeVM : () -> Process .
   ax Institute = (Mathematician | CoffeeVM) \ coin \ coffee .
