@@ -36,6 +36,6 @@ TATP supports the following commands:
 - **set condition bound BND**, to set the maximum depth used for conditions when using **reduce** to **BND**. The special value **infinity** can be used to express that it is unbounded.
 - **set rewrite bound BND**, to set the maximum number of steps when using **reduce** to **BND**. The special value **infinity** can be used to express that it is unbounded.
 - **eof**, which stands for *end of file*. The text after **eof** will not be considered by the tool.
-- **quit**, for exiting the system.
+- **quit**, to exit the system.
 
 
