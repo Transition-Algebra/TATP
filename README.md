@@ -4,7 +4,7 @@
 
 The tool can loaded into Maude by executing `maude -no-banner -allow-files run-tatp.maude` from the directory `src`.
 
-A few sample specifications can be found in the directory `src/test`. They can be loaded into the tool using the command `load test/file.ta`.
+A few sample specifications can be found in the directory `examples`. They can be loaded into the tool using the command `load ../examples/file.ta`.
 
 ## Syntax
 
