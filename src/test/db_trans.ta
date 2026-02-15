@@ -1,0 +1,45 @@
+spec BOOL is
+  sort Bool .
+  ops true, false : () -> Bool .
+endspec
+
+spec DATA is
+ sorts User, Action .
+
+ ops user1, user2, user3, user4 : () -> User .
+ ops follows, comments, influenced : () -> Action .
+endspec
+
+spec DB is
+ including DATA .
+ including BOOL .
+
+ vars U1, U2, U3 : User .
+
+ ax user1 =( follows )> user2 .
+ ax user2 =( follows )> user3 .
+ ax user3 =( comments )> user4 .
+
+ ax U1 =( influenced )> U3 if U1 =( (follows) * )> U3 .
+
+ ops test1, test2, test3, test4 : () -> Bool .
+ ax test1 = true if user1 =( influenced )> user3 .
+ ax test3 = true if user1 =( influenced )> user4 .
+endspec
+
+open DB
+ reduce test1 ``` Should be true
+ reduce test3 ``` Should be test3
+ check user1 =( influenced )> user3 ``` Should be satisfied
+ ``` check user1 =( influenced )> user4 ``` Does not terminate
+close
+
+
+
+
+
+
+
+
+
+

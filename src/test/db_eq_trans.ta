@@ -1,0 +1,67 @@
+spec BOOL is
+  sort Bool .
+  ops true, false : () -> Bool .
+endspec
+
+spec DATA is
+ sorts User, UserID, Name, Age, Action .
+
+ ``` Example data
+ ops id1, id2, id3, id4 : () -> UserId .
+ ops name1, name2, name3, name4 : () -> Name .
+ ops age1, age2, age3, age4 : () -> Age .
+
+ ``` User ctor
+ op  user : UserId Name Age -> User .
+
+ ``` Possible actions (labels)
+ ops follows, comments, influenced : () -> Action .
+
+ var ID : UserId .
+ var N : Name .
+ var A : Age .
+
+ ``` Projection functions
+ op id : User -> UserId .
+ ax id(user(ID, N, A)) = ID .
+
+ op name : User -> Name .
+ ax name(user(ID, N, A)) = N .
+
+ op age : User -> Age .
+ ax age(user(ID, N, A)) = A .
+endspec
+
+spec DB is
+ including DATA .
+ including BOOL .
+
+ vars U1, U2, U3 : User .
+
+ ax user(id1, name1, age1) =( follows )> user(id2, name2, age2) .
+ ax user(id2, name2, age2) =( follows )> user(id3, name3, age3) .
+ ax user(id3, name3, age3) =( comments )> user(id4, name4, age4) .
+
+ ax U1 =( influenced )> U3 if U1 =( (follows) * )> U3 .
+
+ ops test1, test2 : () -> Bool .
+ ax test1 = true if user(id1, name1, age1) =( influenced )> user(id3, name3, age3) .
+ ax test2 = true if user(id1, name1, age1) =( influenced )> user(id4, name4, age4) .
+endspec
+
+open DB
+ reduce test1 ``` Should be true
+ reduce test2 ``` Should be test2
+ check user1 =( influenced )> user3 ``` Should be satisfied
+ ``` check user1 =( influenced )> user4 ``` Does not terminate
+close
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,53 @@
+spec DATA is
+ sort Data .
+
+ ops name1, name2, age1, age2 : () -> Data .
+endspec
+
+spec DB is
+ including DATA .
+
+ sorts Entry, DB .
+
+ sort Action . `` Predefined?
+
+ op mt : () -> Entry .
+ op __ : Entry Entry -> Entry [assoc comm id: (mt)] .
+ op table : Entry -> DB . `` {_} does not work
+
+
+ op pers : Data Data -> Entry .
+
+ `` pers(name1, age1) - name > value(name1)
+ `` pers(name1, age1) - age > value(age1)
+
+ `` Values
+ op value : Data -> Entry .
+
+ ops name, age : () -> Action .
+
+ vars N1, N2, A1, A2 : Data .
+ var  DB : DB .
+ vars E, E', ES, ES' : Entry .
+ var  A : Action .
+
+ ax pers(N1, A1) =( name )> value(N1) .
+ ax pers(N1, A1) =( age )> value(A1) .
+
+ ax table(mt)   =( A )> table(mt) .
+ ax table(E ES) =( A )> table(E' ES') if E =( A )> E' and table(ES) =( A )> table(ES') .
+endspec
+
+spec TEST is
+ including DB .
+endspec
+
+
+
+
+
+
+
+
+
+
