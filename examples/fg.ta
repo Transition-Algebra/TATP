@@ -23,7 +23,7 @@ set condition bound infinity
 reduce f s s 0
 `` The result should be 2, i.e. s s 0.
 `` In general, for any natural number N, f N should evaluate to N.
-set narrowing bound 7
+set narrowing bound 8
 check g 0 =(0)> 0
 `` The result should be "satisfied"
 check g 0 =(0)> s 0

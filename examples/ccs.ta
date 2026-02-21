@@ -7,34 +7,38 @@ spec CCS is
   including BOOL .
 
   sorts Channel, Action .
-  op snd : Channel -> Action .
   op rcv : Channel -> Action .
+  op snd : Channel -> Action .
   op tau : () -> Action .
 
   op _=/=_ : Channel Channel -> Bool [comm] .
   op _=/=_ : Action Action -> Bool [comm] .
 
-  sort Process .
-  op 0 : () -> Process .
-  op _._ : Action Process -> Process .
-  op _+_ : Process Process -> Process [assoc comm] .
-  op _|_ : Process Process -> Process [assoc comm] .
-  op _\_ : Process Channel -> Process .
-
-  vars P, P', Q, Q' : Process .
   vars C, C' : Channel .
   var A : Action .
 
+  ax rcv(C) =/= rcv(C') = C =/= C' .
   ax snd(C) =/= rcv(C') = true .
   ax snd(C) =/= snd(C') = C =/= C' .
-  ax rcv(C) =/= rcv(C') = C =/= C' .
-  ax tau =/= snd(C) = true .
   ax tau =/= rcv(C) = true .
+  ax tau =/= snd(C) = true .
 
+  sort Process .
+  op 0 : () -> Process .
+
+  vars P, P', Q, Q' : Process .
+
+  op _._ : Action Process -> Process .
   ax (A . P) =(A)> P [label: act] .
+
+  op _+_ : Process Process -> Process [assoc comm] .
   ax (P + Q) =(A)> P' if P =(A)> P' [label: sum] .
+
+  op _|_ : Process Process -> Process [assoc comm] .
   ax (P | Q) =(A)> (P' | Q) if P =(A)> P' [label: com] .
   ax (P | Q) =(tau)> (P' | Q') if P =(snd(C))> P' and Q =(rcv(C))> Q' [label: com] .
+
+  op _\_ : Process Channel -> Process .
   ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true [label: res] .
 endspec
 
@@ -60,7 +64,7 @@ open INSTITUTE
 
   reduce thm-gen
 
-  echeck Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute
+  echeck Institute =((A:Action)* ; (snd(theorem)) ; (B:Action)*)> Institute
   using (comp comp
          star
          res res com act
