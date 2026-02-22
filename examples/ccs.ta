@@ -40,6 +40,12 @@ spec CCS is
 
   op _\_ : Process Channel -> Process .
   ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true [label: res] .
+
+  sort PDef .
+  op def : () -> PDef .
+
+  ax P =(A)> Q' if P =(def)> Q and Q =(A)> Q' [label: con] .
+  ax P = Q if P =(def)> Q [label: eq-def] .
 endspec
 
 spec INSTITUTE is
@@ -50,9 +56,9 @@ spec INSTITUTE is
   ax coffee =/= coin = true .
 
   ops Institute, Mathematician, CoffeeVM : () -> Process .
-  ax Institute = (Mathematician | CoffeeVM) \ coin \ coffee .
-  ax Mathematician =(tau)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) [label: def-M] .
-  ax CoffeeVM =(tau)> (rcv(coin) . snd(coffee) . CoffeeVM) [label: def-C] .
+  ax Institute =(def)> (Mathematician | CoffeeVM) \ coin \ coffee [label: def-I] .
+  ax Mathematician =(def)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) [label: def-M] .
+  ax CoffeeVM =(def)> (rcv(coin) . snd(coffee) . CoffeeVM) [label: def-C] .
 
   op thm-gen : () -> Bool .
   ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute .
@@ -63,17 +69,43 @@ open INSTITUTE
   set condition bound 9
 
   reduce thm-gen
+close
+eof
 
+open INSTITUTE
   echeck Institute =((A:Action)* ; (snd(theorem)) ; (B:Action)*)> Institute
   using (comp comp
-         star
+         star comp
+         con def-I
+         res res com
+         con def-M act
+         con def-C act
+         star comp
+         res res com
+         act act star
+         res res com
+         act star eq-def)
+  `` solved in approximately 20 seconds
+close
+eof
+
+`` The same property can be checked without using the usual CCS rule
+`` for constants (con), and by using eq-def instead. But this leads to
+`` a much larger search space, and longer time to find a solution,
+`` because eq-def has a much broader range of applicability.
+
+open INSTITUTE
+  echeck Institute =((A:Action)* ; (snd(theorem)) ; (B:Action)*)> Institute
+  using (eq-def def-I
+         comp comp
+         star comp
+         res res com
+         eq-def def-M act
+         eq-def def-C act
+         star comp
+         res res com
+         act act star
          res res com act
-         star comp
-         res res com def-M
-         star comp
-         res res com def-C
-         star comp
-         res res com act act
-         star comp
-         res res com act act)
+         eq-def def-I)
+  `` solved in almost 4.5 minutes
 close
