@@ -40,34 +40,34 @@ endfm
 *** ----------------------------------------------------------------------------
 
 fmod $NUMBER is
-  sorts Zero NzNat Nat .
-  subsort Zero NzNat < Nat .
+  sorts <Zero> <NzNat> <Nat> .
+  subsort <Zero> <NzNat> < <Nat> .
 
-  op 0 : -> Zero [ctor] .
-  op s_ : Nat -> NzNat
+  op 0 : -> <Zero> [ctor] .
+  op s_ : <Nat> -> <NzNat>
     [ctor iter
      special (id-hook SuccSymbol term-hook zeroTerm (0))] .
 
-  sorts NzInt Int .
-  subsorts NzNat < NzInt Nat < Int .
+  sorts <NzInt> <Int> .
+  subsorts <NzNat> < <NzInt> <Nat> < <Int> .
 
-  op -_ : NzNat -> NzInt
+  op -_ : <NzNat> -> <NzInt>
     [ctor
      special (id-hook MinusSymbol
-              op-hook succSymbol (s_ : Nat ~> NzNat)
-              op-hook minusSymbol (-_ : NzNat ~> Int))] .
-  op -_ : NzInt -> NzInt [ditto] .
-  op -_ : Int -> Int [ditto] .
+              op-hook succSymbol (s_ : <Nat> ~> <NzNat>)
+              op-hook minusSymbol (-_ : <NzNat> ~> <Int>))] .
+  op -_ : <NzInt> -> <NzInt> [ditto] .
+  op -_ : <Int> -> <Int> [ditto] .
 
-  sorts PosRat NzRat Rat .
-  subsorts NzInt < NzRat Int < Rat .
-  subsorts NzNat < PosRat < NzRat .
+  sorts <PosRat> <NzRat> <Rat> .
+  subsorts <NzInt> < <NzRat> <Int> < <Rat> .
+  subsorts <NzNat> < <PosRat> < <NzRat> .
 
-  op _/_ : NzInt NzNat -> NzRat
+  op _/_ : <NzInt> <NzNat> -> <NzRat>
     [ctor prec 31 gather (E e)
      special (id-hook DivisionSymbol
-              op-hook succSymbol (s_ : Nat ~> NzNat)
-              op-hook minusSymbol (-_ : NzNat ~> Int))] .
+              op-hook succSymbol (s_ : <Nat> ~> <NzNat>)
+              op-hook minusSymbol (-_ : <NzNat> ~> <Int>))] .
 endfm
 
 *** ----------------------------------------------------------------------------
@@ -251,10 +251,10 @@ fmod GRAMMAR is
 
   op subsorts : Type PSFormList -> SubsortDeclSet .
   eq subsorts(TP, just S) = (subsort S < TP .) .
-  ceq subsorts(TP, <number>) = (subsort 'Rat < TP .)
-   if TP not-in ('Zero ; 'NzNat ; 'Nat ;
-                 'NzInt ; 'Int ;
-                 'PosRat ; 'NzRat ; 'Rat) .
+  ceq subsorts(TP, <number>) = (subsort '<Rat> < TP .)
+   if TP not-in ('<Zero> ; '<NzNat> ; '<Nat> ;
+                 '<NzInt> ; '<Int> ;
+                 '<PosRat> ; '<NzRat> ; '<Rat>) .
   ceq subsorts(TP, <string>) = (subsort 'String < TP .)
    if TP not-in ('Char ; 'String) .
   eq subsorts(TP, PSF) = none [owise] .
@@ -324,9 +324,9 @@ fmod GRAMMAR is
 
   *** annotations for predefined data types  - - - - - - - - - - - - - - - - - -
   op <number> : -> QidSet .
-  eq <number> = 'Zero ; 'NzNat ; 'Nat ;
-                'NzInt ; 'Int ;
-                'PosRat ; 'NzRat ; 'Rat .
+  eq <number> = '<Zero> ; '<NzNat> ; '<Nat> ;
+                '<NzInt> ; '<Int> ;
+                '<PosRat> ; '<NzRat> ; '<Rat> .
 
   op <string> : -> QidSet .
   eq <string> = 'Char ; 'String .
@@ -336,20 +336,20 @@ fmod GRAMMAR is
   eq successor-attributes
    = iter ctor
      special(id-hook('SuccSymbol, nil)
-             term-hook('zeroTerm, '0.Zero)) .
+             term-hook('zeroTerm, '0.<Zero>)) .
 
   op negation-attributes : -> AttrSet .
   eq negation-attributes
    = special(id-hook('MinusSymbol, nil)
-             op-hook('succSymbol, 's_, 'Nat, 'NzNat)
-             op-hook('minusSymbol, '-_, 'NzNat, 'NzInt)) .
+             op-hook('succSymbol, 's_, '<Nat>, '<NzNat>)
+             op-hook('minusSymbol, '-_, '<NzNat>, '<NzInt>)) .
 
   op division-attributes : -> AttrSet .
   eq division-attributes
    = ctor prec(31) gather('E 'e)
      special(id-hook('DivisionSymbol, nil)
-             op-hook('succSymbol, 's_, 'Nat, 'NzNat)
-             op-hook('minusSymbol, '-_, 'NzNat, 'NzInt)) .
+             op-hook('succSymbol, 's_, '<Nat>, '<NzNat>)
+             op-hook('minusSymbol, '-_, '<NzNat>, '<NzInt>)) .
 
   *** bubble constructors  - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op bubble-ctors : Grammar -> QidSet .
