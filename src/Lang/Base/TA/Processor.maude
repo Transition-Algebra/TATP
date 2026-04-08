@@ -41,7 +41,8 @@ mod TA/PROCESSOR { P :: PID } is
   var  P : P$Pid .
   var  I : Oid .
   vars QIL LbL : QidList .
-  vars T E : ATerm .
+  vars Dcl T E : ATerm .
+  var  TL : TermList .
   var  Atts : AttributeSet .
   var  F? : [Condition{TA}] .
   var  FDS : FrmDeclSet{TA} .
@@ -86,6 +87,19 @@ mod TA/PROCESSOR { P :: PID } is
    if SAS := AnalysisState[TA]{SB & none & none} .
 
   *** executing TA commands  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - - - - -
+  crl [TA:let] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{let Dcl}, SB)
+   => < $[P] : PROC | running, Atts >
+    processed(I, $[P],
+      if TL :: Term
+      then log('Adding 'declaration) '\s
+        (print L term TL)
+      else log('Adding 'declarations) '\n
+        mk-page(intercalate('\n, (print L terms TL))) fi,
+      add-declaration(Dcl, SB))
+   if TL := show-declarations(Dcl, SB) .
+
   crl [TA:reduce] :
     < $[P] : PROC | executing I command, Atts >
     do($[P], Cmd[L]{reduce T}, SB)

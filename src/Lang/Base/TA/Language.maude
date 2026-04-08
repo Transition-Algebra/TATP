@@ -159,6 +159,10 @@ fmod TA/LANGUAGE is
            [assoc format ('d 's! 'os 'd) prec (41)]
         |  "_*" : 'Action`{TA`}
            [format ('d 's! 'o) prec (21)]
+        |  "_^_" : 'Action`{TA`} 'Num`{TA`}
+           [format ('d 's! 'os 'd) prec (25)]
+     'Num`{TA`}
+       ::= <number>
      atomic-actions(L, SS) .
 
   op atomic-actions : TA SortSet -> GramDeclSet .
@@ -241,7 +245,8 @@ fmod TA/LANGUAGE is
   eq cmd-grammar(L)
    = grammar 'TA/Cmd/Syntax is
        'Command
-         ::= "reduce_" : 'Term [format('b 'so 'd)]
+         ::= "let_." : 'Declaration [format('b 'so 's 'd)]
+          |  "reduce_" : 'Term [format('b 'so 'd)]
           |  "check_" : 'Sentence [format('b 'so 'd)]
           |  "echeck_using_" : 'Sentence 'LabelList [format('b 'so 'sb 'so 'd)]
           |  "echeck_using(_)" : 'Sentence 'LabelList [format('b 'so 'sb 'd 'so 'b 'o)]
@@ -249,6 +254,9 @@ fmod TA/LANGUAGE is
           |  "set unification bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set condition bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set rewrite bound_" : 'Bound [format('b 's 's 'so 'd)]
+       'Declaration
+         ::= bubble "declaration"
+             [balanced-parentheses exclude ("including" ".")]
        'Term
          ::= bubble "term" [balanced-parentheses]
        'Sentence
@@ -284,12 +292,21 @@ fmod TA/READ is
   vars EVD : Constant .
   vars S O Lb : AConstant .
   var  V : AVariable .
-  vars SL1 SL2 OL1 OL2 LbL LbL1 LbL2 A B : ATerm .
-  vars E E1 E2 VD VN VL VNL VNL1 VNL2 AtL AtL1 AtL2 T T1 T2 : ATerm .
+  vars SL1 SL2 OL1 OL2 LbL LbL1 LbL2 A B N : ATerm .
+  vars D E E1 E2 VD VN VL VNL VNL1 VNL2 AtL AtL1 AtL2 T T1 T2 : ATerm .
   var  TL : ATermList .
   var  AtS : AttrSet .
   var  EDS : SenDeclSet .
   var  B? : [Bound] .
+
+  *** read specification body  - - - - - - - - - - - - - - - - - - - - - - - - -
+  op read-body : TA ATermList -> SpecBody{TA} .
+  eq read-body(L, TL) = extend((nil).SpecBody{TA}, TL) .
+
+  *** extend spec-body with new declarations  - - - - - - - - - - - - - - - - --
+  op extend : SpecBody{TA} ATermList -> SpecBody{TA} .
+  eq extend(SB, empty) = SB .
+  eq extend(SB, (T, TL)) = extend(SB >>= T, TL) .
 
   *** add declaration  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op add-declaration : ATerm SpecBody{TA} -> SpecBody{TA} .
@@ -435,6 +452,8 @@ fmod TA/READ is
    = read-action(L, A) + read-action(L, B) .
   eq read-action(L, {'_*[A] : 'Action`{TA`}})
    = read-action(L, A) * .
+  eq read-action(L, {'_^_[A, N] : 'Action`{TA`}})
+   = read-action(L, A) ^ plain-term(N) .
 
   *** read formula  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op read-formula : TA ATerm ~> Formula{TA} .
@@ -466,6 +485,8 @@ fmod TA/READ is
 
   *** read command  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op read-cmd : TA ATerm ~> Cmd{TA} .
+  eq read-cmd(L, {'let_.[D] : 'Command})
+   = Cmd[L]{let D} .
   eq read-cmd(L, {'reduce_[T] : 'Command})
    = Cmd[L]{reduce T} .
   eq read-cmd(L, {'check_[E] : 'Command})
@@ -619,6 +640,13 @@ fmod TA/SHOW is
   eq show-label-attr(L, {label(QI)} AtL)
    = 'label:_[mk-bubble('label, show-qid(QI))], show-label-attr(L, AtL) .
   eq show-label-attr(L, {At} AtL) = show-label-attr(L, AtL) [owise] .
+
+  *** show declarations  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op show-declarations : ATermList SpecBody{TA} -> TermList .
+  eq show-declarations(empty, SB) = empty .
+  eq show-declarations((T:ATerm, TL:ATermList), SB)
+   = show-fragment(read-body(TA, T:ATerm), SB),
+     show-declarations(TL:ATermList, SB) .
 endfm
 
 ********************************************************************************
@@ -721,7 +749,7 @@ fmod TA/PARSING is
   vars $S $SL SL SL1 SL2 : ATerm .
   vars $O $OL OL OL1 OL2 $A A : ATerm .
   vars $Lb $LbL LbL LbL1 LbL2 : ATerm .
-  vars VD $VL VL VL1 VL2 VNL $VNL VNL1 VNL2 V $VN VN $E E E1 E2 : ATerm .
+  vars $D D VD $VL VL VL1 VL2 VNL $VNL VNL1 VNL2 V $VN VN $E E E1 E2 : ATerm .
   vars $AtL AtL AtL1 AtL2 : ATerm .
   vars $T T $B B : ATerm .
   var  TL : ATermList .
@@ -904,7 +932,7 @@ fmod TA/PARSING is
 
   op check`that_sort`is`declared : TA -> AnalysisAction{TA} .
   eq check that L sort is declared (S) in SAS
-   = check (read-sort(L, S) in sorts(SAS)) and-then return (S)
+   = check (read-sort(L, S) in (sorts(SAS) ; '<Nat>)) and-then return (S)
      or-else
      fail ('undeclared 'sort emph(read-sort(L, S)),
       (at L term (S), include context))
@@ -1179,6 +1207,9 @@ fmod TA/PARSING is
   *** analyse command  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op analyse_command : TA -> AnalysisAction{TA} .
 
+  eq analyse L command {'let_.[$D] : 'Command}
+   = try { 'let_.[analyse L $declaration ($D)] : 'Command } .
+
   eq analyse L command {'reduce_[$T] : 'Command}
    = try { 'reduce_[analyse L term ($T)] : 'Command } .
 
@@ -1208,6 +1239,12 @@ fmod TA/PARSING is
 
   eq analyse L command {'set`rewrite`bound_[$B] : 'Command}
    = try { 'set`rewrite`bound_[analyse L bound ($B)] : 'Command } .
+
+  *** analyse $declaration  - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op analyse_$declaration : TA -> AnalysisAction{TA} .
+  ceq analyse L $declaration {$[D] : 'Declaration} in SAS
+   = just (parse TA declaration QIL in SAS) on QIL
+    if QIL := read-qids(D) .
 
   *** analyse term  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op analyse_term : TA -> AnalysisAction{TA} .

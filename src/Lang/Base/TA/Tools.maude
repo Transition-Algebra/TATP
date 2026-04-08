@@ -469,12 +469,12 @@ fmod TA/CHECK is
   op eq-mod : Qid SpecBody{TA} ~> FModule .
   ceq eq-mod(H, SB)
    = (fmod H is
-        IL sorts SS . SSDS ODS MAS EQS act-eqs(TA, TS) eqs(HCS)
+        IL sorts SS \ '<Nat> . SSDS ODS MAS EQS act-eqs(TA, TS) eqs(HCS)
       endfm)
    if (fmod QI is
          IL sorts SS . SSDS ODS MAS EQS
        endfm) := fmod(sentence-grammar(SB))
-      /\ TS := getSorts(fmod(term-grammar(SB)))
+      /\ TS := getSorts(fmod(term-grammar(SB))) \ '<Nat>
       /\ HCS := Horn-clauses(read-formulae(TA, sens(SB))) .
 
   *** act-eqs  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -494,6 +494,11 @@ fmod TA/CHECK is
      (ceq '_=_>_[X, '_*[A], Y] = 'true.AtomicSentence`{TA`}
       if '_=_>_[X, '_;_[A, '_*[A]], Y] = 'true.AtomicSentence`{TA`}
       [label('star)] .)
+     (ceq '_=_>_[X, '_^_[A,'0.<Zero>], Y] = 'true.AtomicSentence`{TA`}
+      if X = Y [label('iter)] .)
+     (ceq '_=_>_[X, '_^_[A,'s_['N:<Nat>]], Y] = 'true.AtomicSentence`{TA`}
+      if '_=_>_[X, '_;_[A, '_^_[A,'N:<Nat>]], Y] = 'true.AtomicSentence`{TA`}
+      [label('iter)] .)
      act-eqs(L, SS)
    if X := var('X, S) /\ Y := var('Y, S)
       /\ A := 'A:Action`{TA`} /\ B := 'B:Action`{TA`} .

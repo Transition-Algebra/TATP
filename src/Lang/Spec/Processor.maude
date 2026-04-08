@@ -167,7 +167,7 @@ mod SPEC/PROCESSOR { L :: LANGUAGE, SP :: SPEC/SUBPROCESSOR } is
                    or-else parse Spec[L] command (QIL) in SAS)
     else relay($[Spec[L]], parse Spec[L] command (QIL) in SAS
                    or-else parse($[Spec[L] / MN?], $[Spec[L]], QIL, SB?)) fi
-   if MN? := last-opened-module(Atts) /\ SB? := body(DB[Spec[L]][MN?])
+   if MN? := last-opened-module(Atts) /\ SB? := body(odb(Spec[L], Atts)[MN?])
       /\ SAS := AnalysisState[Spec[L]]{DB[Spec[L]] & omod-stack(Atts)} .
 
   crl [Spec:process] :

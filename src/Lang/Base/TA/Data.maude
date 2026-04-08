@@ -141,6 +141,13 @@ fmod TA/FORMULA is
   op _;_ : Action{TA} Action{TA} -> Action{TA} [ctor assoc prec 31] .
   op _+_ : Action{TA} Action{TA} -> Action{TA} [ctor assoc prec 41] .
   op _* : Action{TA} -> Action{TA} [ctor prec 21] .
+  op _^_ : AtomicAction{TA} Nat -> AtomicAction{TA} [ctor prec 25] .
+  op _^_ : Action{TA} Term -> Action{TA} [ctor prec 25] .
+  op _^_ : AtomicAction{TA} Constant -> AtomicAction{TA} [ctor prec 25] .
+
+  vars L R : Term .
+  var  A : Action{TA} .
+  eq Trans[TA]{L =(A ^ '0.<Zero>)> R} = Eq[TA]{R = L} .
 
   *** formulae  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   sort Equation{TA} .
@@ -232,7 +239,7 @@ fmod TA/HORN-CLAUSE-SET is
   var  FDS : FrmDeclSet{TA} .
   var  HCS : HClSet{TA} .
   var  VS : VariableSet .
-  vars T LHS RHS : Term .
+  vars T LHS RHS N : Term .
   var  EC : EqCondition .
   var  AtS : AttrSet .
 
@@ -285,6 +292,7 @@ fmod TA/HORN-CLAUSE-SET is
   eq show(A ; B) = '_;_[show(A), show(B)] .
   eq show(A + B) = '_+_[show(A), show(B)] .
   eq show(A *) = '_*[show(A)] .
+  eq show(A ^ N) = '_^_[show(A), N] .
 
   op eq-cond : Condition{TA} -> Condition .
   eq eq-cond(true) = nil .
@@ -301,6 +309,7 @@ fmod TA/CMD is
   protecting ATERM .
 
   sort Cmd{TA} .
+  op Cmd[_]{let_} : TA ATerm -> Cmd{TA} [ctor] .
   op Cmd[_]{reduce_} : TA ATerm -> Cmd{TA} [ctor] .
   op Cmd[_]{check_} : TA ATerm -> Cmd{TA} [ctor] .
   op Cmd[_]{echeck_using_} : TA ATerm QidList -> Cmd{TA} [ctor] .
