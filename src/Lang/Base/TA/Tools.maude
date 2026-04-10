@@ -133,9 +133,9 @@ fmod TA/BOUNDED-RED is
 
  vars T T' T'' L L' L'' R R' R'' CURR CURR' PAT PAT' RHS : Term .
  vars NSB NSB' NSB'' NSB''' NCB NCB' NCB'' B : Bound .
+ vars SB SB' SB'' ASB ASB' : Substitution .
  *** Number of steps, number of conditions
  vars NS NS' NS'' NC NC' NC'' N N' : Nat .
- vars SB SB' SB'' ASB : Substitution .
  vars CS CS' CS'' : ConditionStack .
  vars STL STL' : SearchTupleList .
  vars SS SS' : SubstitutionSet .
@@ -202,14 +202,14 @@ fmod TA/BOUNDED-RED is
      [SB?, CS'', NSB'''] := solveCondition(M, HCS, CS', NCB, [L'', A'] & STS) [print "SC L': " L' "\n R': " R' "\n SB? " SB?] .
  eq solveCondition(M, HCS, SB, COND, NSB, NCB, CS, STS, PAT, RHS) = [noMatch, CS, NSB] [owise] .
 
- op allMatches : Module Term Term Nat SubstitutionSet -> SubstitutionSet [memo] .
- ceq allMatches(M, T, PAT, N, SS) = SB, allMatches(M, T, PAT, s(N), SS)
+ op allMatches : Module Term Term Substitution Nat SubstitutionSet -> SubstitutionSet [memo] .
+ ceq allMatches(M, T, PAT, ASB, N, SS) = (ASB ; SB), allMatches(M, T, PAT, ASB, s(N), SS)
   if SB := metaMatch(M, PAT, T, nil, N) /\
-     not SB in SS .
- ceq allMatches(M, T, PAT, N, SS) = allMatches(M, T, PAT, s(N), SS)
+     not (ASB ; SB) in SS .
+ ceq allMatches(M, T, PAT, ASB, N, SS) = allMatches(M, T, PAT, ASB, s(N), SS)
   if SB := metaMatch(M, PAT, T, nil, N) /\
-     SB in SS .
- ceq allMatches(M, T, PAT, N, SS) = empty
+     (ASB ; SB) in SS .
+ ceq allMatches(M, T, PAT, ASB, N, SS) = empty
   if metaMatch(M, PAT, T, nil, N) == noMatch .
 
  sort TermSet .
@@ -284,7 +284,7 @@ fmod TA/BOUNDED-RED is
                  then mtSTL
                  else allTermsOneStep(M, T, A ; (A *), PAT, HCS, NSB, NCB, SS, [T, A *] & STS)
                  fi
-  if SS' := allMatches(M, T, PAT, 0, SS) /\
+  if SS' := allMatches(M, T, PAT, none, 0, SS) /\
      STL := createResults(SS', NSB) .
  eq allTermsOneStep(M, T, (A *) ; A', PAT, HCS, NSB, NCB, SS, STS) =
              allTermsOneStep(M, T, A', PAT, HCS, NSB, NCB, SS, STS)
@@ -315,10 +315,11 @@ fmod TA/BOUNDED-RED is
      ASB := match(M, A, apply(A', SB)) /\
      RHS := placeInContext(CTXT, R) /\
      [SB', CS, NSB''] := solveCondition(M, HCS, (SB ; ASB), COND, NSB', NCB', mtCS, STS, PAT, RHS) /\
+     ASB' := match(M, A, apply(apply(A', ASB), SB')) /\
      T' := placeInContext(CTXT, apply(M, R, SB')) /\
      [T'', NSB'''] := $boundedRed(M, T', HCS, NSB', NCB', T' & STS) /\
-     SS' := allMatches(M, T'', PAT, 0, SS) /\
-     STL := createResults(SS', NSB'') [print "\nA: " A "\nA': " A' "\nASB: " ASB "\nSB' " SB' "\nSTL: " STL] .
+     SS' := allMatches(M, T'', PAT, ASB', 0, SS) /\
+     STL := createResults(SS', NSB'') [print "ATOSOC\nA: " A "\nA': " A' "\nSB: " SB "\nASB: " ASB "\nSB' " SB' "\nASB': " ASB' "\nSTL: " STL] .
  eq allTermsOneStepOneClause(M, T, A, PAT, HC, HCS, NSB, NCB, N, SS, STS) = mtSTL [owise] .
 
  *** Extra argument for A ; B
@@ -344,6 +345,7 @@ fmod TA/BOUNDED-RED is
      ASB := match(M, apply(A', SB), apply(A, SB)) /\
      RHS := placeInContext(CTXT, R) /\
      [SB', CS, NSB''] := solveCondition(M, HCS, (SB ; ASB), COND, NSB', NCB', mtCS, STS, PAT, RHS) /\
+     *** ASB' := match(M, apply(A', SB), apply(A, SB')) /\
      T' := placeInContext(CTXT, apply(M, R, SB')) /\
      [T'', NSB'''] := $boundedRed(M, T', HCS, NSB', NCB', T' & STS) /\
      STL := [T'', A'', NSB''', NCB] .
@@ -418,8 +420,6 @@ fmod TA/REDUCE is
   op reduce : TA Term FModule HClSet{TA} Bound Bound -> ResultPair .
   eq reduce(L, T, M, HCS, C, R) = boundedRed(M, T, HCS, C, R) [print HCS] .
 endfm
-
-eof
 
 ********************************************************************************
 
@@ -525,8 +525,6 @@ endfm
 
 set print attribute on .
 
-eof
-
 fmod TEST is
  pr TA/REDUCE .
  pr META-LEVEL .
@@ -617,22 +615,41 @@ endfm
 
 *** red allTermsOneStep(m, '_|_['Mathematician.Process, 'CoffeeVM.Process], Act[TA]{'tau.Action}, 'P:Process, hcs, 15, 15, empty, mtSTS) .
 
-*** red allTermsOneStepOneClause(m, '_|_['Mathematician.Process, 'CoffeeVM.Process], Act[TA]{'tau.Action}, 'PP:Process,
-***        hc1, hcs, 15, 16, 0, empty, mtSTS) .
+***(
+red allTermsOneStepOneClause(m, '_|_['Mathematician.Process, 'CoffeeVM.Process], Act[TA]{'tau.Action}, 'PP:Process,
+        hc1, hcs, 15, 16, 0, empty, mtSTS) .
+)
 
 ***(
  red solveCondition(m, hcs, ('P:Process <- 'Mathematician.Process ; 'Q:Process <- 'CoffeeVM.Process),
    Trans[TA]{'P:Process =(Act[TA]{'snd['C:Channel]})> 'P':Process}
    /\ Trans[TA]{'Q:Process =(Act[TA]{'rcv['C:Channel]})> 'Q':Process}, 15, 15, mtCS, mtSTS, 'PP:Process, '_|_['P':Process, 'Q':Process]) .
 )
-*** red solveCondition(m, hcs, ('P:Process <- 'Mathematician.Process ; 'Q:Process <- 'CoffeeVM.Process),
-***   Trans[TA]{'P:Process =(Act[TA]{'snd['C:Channel]})> 'P':Process}, 15, 15, mtCS, mtSTS, 'PP:Process, '_|_['P':Process, 'Q':Process]) .
 
-*** red allTermsOneStep(m, 'Mathematician.Process, Act[TA]{'snd['C:Channel]}, 'P:Process, hcs, 15, 15, empty, mtSTS) .
+
+red solveCondition(m, hcs, ('P:Process <- 'Mathematician.Process ; 'Q:Process <- 'CoffeeVM.Process),
+   Trans[TA]{'P:Process =(Act[TA]{'snd['C:Channel]})> 'P':Process}, 15, 15, mtCS, mtSTS, 'PP:Process, '_|_['P':Process, 'Q':Process]) .
+
 
 ***(
- red allTermsOneStepOneClause(m, 'Mathematician.Process, Act[TA]{'A:Action}, 'PP:Process,
-        hc2, hcs, 15, 16, 0, empty, mtSTS) .
+red allTermsOneStep(m, 'Mathematician.Process, Act[TA]{'snd['C:Channel]}, 'P':Process, hcs, 15, 15, empty, mtSTS) .
+)
+
+***(
+red allTermsOneStepOneClause(m, 'Mathematician.Process, Act[TA]{'snd['C:Channel]}, 'P':Process,
+        hc2, hcs, 4, 4, 0, empty, mtSTS) .
+)
+
+***(
+red solveCondition(m, hcs, ('P:Process <- 'Mathematician.Process ;
+                            'A:Action <- 'snd['C:Channel] ;
+                            'Q:Process <- '_._['snd['coin.Channel], '_._['rcv['coffee.Channel], '_._['snd['theorem.Channel], 'Mathematician.Process]]]),
+   Trans[TA]{'Q:Process =(Act[TA]{'A:Action})> 'Q':Process}, 1, 1, mtCS, mtSTS, 'PP:Process, 'Q':Process) .
+)
+
+***(
+red allTermsOneStep(m, '_._['snd['coin.Channel], '_._['rcv['coffee.Channel], '_._['snd['theorem.Channel], 'Mathematician.Process]]],
+Act[TA]{'snd['C:Channel]}, 'Q':Process, hcs, 4, 4, empty, mtSTS) .
 )
 
 ***(
@@ -641,11 +658,17 @@ red solveCondition(m, hcs, ('P:Process <- 'Mathematician.Process),
    Trans[TA]{'Q:Process =(Act[TA]{'A:Action})> 'Q':Process}, 15, 15, mtCS, mtSTS, 'PP:Process, 'Q':Process) .
 )
 
-*** red allTermsOneStep(m, t1, Act[TA]{'A:Action}, 'PP:Process, hcs, 15, 15, empty, mtSTS) .
+*** red allTermsOneStep(m, t1, Act[TA]{'snd['C:Channel]}, 'PP:Process, hcs, 6, 6, empty, mtSTS) .
+
+
+red solveCondition(m, hcs, ('P:Process <- 'Mathematician.Process ; 'A:Action <- 'snd['C:Channel]),
+   Trans[TA]{'P:Process =(Act[TA]{'def.PDef})> 'Q:Process} /\
+   Trans[TA]{'Q:Process =(Act[TA]{'A:Action})> 'Q':Process}, 5, 5, mtCS, mtSTS, 'PP:Process, 'Q':Process) .
+
 
 ***(
-red allTermsOneStepOneClause(m, t1, Act[TA]{'A:Action}, 'PP:Process,
-        hc2, hcs, 15, 16, 0, empty, mtSTS) .
+red allTermsOneStepOneClause(m, t1, Act[TA]{'snd['C:Channel]}, 'PP:Process,
+        hc2, hcs, 6, 6, 0, empty, mtSTS) .
 )
 
 ***(
