@@ -687,7 +687,22 @@ endfm
 
 set print attribute off .
 
-red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action}, 'Q':Process, hcs, 11, 11, empty, mtSTS) .
+*** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action}, 'Q':Process, hcs, 9, 11, empty, mtSTS) .
+
+
+***(
+red allTermsOneStep(m, '_\_['_\_['_|_['_._['rcv['coffee.Channel], '_._['snd['theorem.Channel], 'Mathematician.Process]],
+                                      '_._['snd['coffee.Channel], 'CoffeeVM.Process]],
+    'coin.Channel], 'coffee.Channel], Act[TA]{'tau.Action}, 'Q':Process, hcs, 4, 11, empty, mtSTS) .
+)
+
+***(
+red allTermsOneStep(m, '_\_['_\_['_|_['CoffeeVM.Process,
+                                      '_._['snd['theorem.Channel], 'Mathematician.Process]],
+                                      'coin.Channel], 'coffee.Channel], Act[TA]{'snd['theorem.Channel]},
+                                      'Q':Process, hcs, 2, 11, empty, mtSTS) .
+)
+
 
 *** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'def.PDef}, 'PP:Process, hcs, 15, 15, empty, mtSTS) .
 
