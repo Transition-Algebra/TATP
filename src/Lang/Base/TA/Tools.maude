@@ -198,7 +198,7 @@ fmod TA/BOUNDED-RED is
      [L'', NSB'] := $boundedRed(M, L', HCS, NSB, NCB, L' & STS) /\
      [R'', NSB''] := $boundedRed(M, R', HCS, NSB', NCB, R' & STS) /\
      L'' == R'' /\
-     CS' := < L, R > CS [print "SCeq SB: " SB "\n L': " L'] .
+     CS' := < L, R > CS .
  ceq solveCondition(M, HCS, SB, Eq[LA]{L = R} /\ COND, NSB, NCB, CS, STS, PAT, RHS) =
                                         if SB? :: Substitution
                                         then solveCondition(M, HCS, SB?, Eq[LA]{L = R} /\ COND, NSB''', NCB, CS', STS, PAT, RHS)
@@ -221,9 +221,7 @@ fmod TA/BOUNDED-RED is
      [R'', NSB''] := $boundedRed(M, R', HCS, NSB', NCB, R' & STS) /\
      A' := apply(A, SB) /\
      CS' := < L, A, R'', SB, [L'', A', NSB'', NCB], empty > /\
-     [SB?, CS'', NSB'''] := solveCondition(M, HCS, CS' CS, NCB, [L'', A'] & STS)
-     [print "SC: L:" L "\n A: " A "\nL': " L' "\n R': " R' "\n SB: " SB "\n L'': " L'' "\n R'' " R'' "\n COND: " COND "\n A': " A'
-            "\n NCB " NCB "\n NSB " NSB  "\n SB? " SB?] .
+     [SB?, CS'', NSB'''] := solveCondition(M, HCS, CS' CS, NCB, [L'', A'] & STS) .
  eq solveCondition(M, HCS, SB, COND, NSB, NCB, CS, STS, PAT, RHS) = [noMatch, CS, NSB] [owise] .
 
  op makeFresh : Term -> Term .
@@ -274,10 +272,10 @@ fmod TA/BOUNDED-RED is
  op solveCondition : Module HClSet{TA} ConditionStack Bound SearchedTermSet -> SearchResult .
  ceq solveCondition(M, HCS, < CURR, Act[TA]{T}, PAT, SB, result(SB', NSB) STL, SS > CS, NCB, STS) =
                                                                 [(SB ; SB'), < CURR, Act[TA]{T}, PAT, SB, STL, SS > CS, NSB]
-  if compatible(SB, SB') [print "End SB: " SB "\n SB': " SB'] .
+  if compatible(SB, SB') .
  ceq solveCondition(M, HCS, < CURR, Act[TA]{T}, PAT, SB, result(SB', NSB) STL, SS > CS, NCB, STS) =
                                                                 solveCondition(M, HCS, < CURR, Act[TA]{T}, PAT, SB, STL, SS > CS, NCB, STS)
-  if not compatible(SB, SB') [print "EndError SB: " SB "\n SB': " SB'] .
+  if not compatible(SB, SB') .
  ceq solveCondition(M, HCS, < L, R > CS, NCB, STS) = if L'' == R''
                                                      then [SB, CS', NSB'']
                                                      else solveCondition(M, HCS, < L, R > CS', NCB, STS)
@@ -295,8 +293,7 @@ fmod TA/BOUNDED-RED is
  ceq solveCondition(M, HCS, < CURR, A, PAT, SB, [T, A', NSB, NCB] STL, SS > CS, NCB', STS) =
                  solveCondition(M, HCS, < CURR, A, PAT, SB, STL STL', SS > CS, NCB', STS)
   if PAT' := apply(M, PAT, SB) /\
-     STL' := allTermsOneStep(M, T, A', PAT', HCS, NSB, NCB, SS, [T, A'] & STS)
-     [print "XXSC T: " T "\n A': " A' "\n STL': " STL'] .
+     STL' := allTermsOneStep(M, T, A', PAT', HCS, NSB, NCB, SS, [T, A'] & STS) .
  eq solveCondition(M, HCS, CS, NCB, STS) = [noMatch, mtCS, 0] [owise] .
 
  sort ReductionTuple .
@@ -372,8 +369,7 @@ fmod TA/BOUNDED-RED is
      *** T' := placeInContext(CTXT, apply(M, R, SB')) /\
      *** [T'', NSB'''] := $boundedRed(M, T', HCS, NSB', NCB', T' & STS) /\
      *** SS' := allMatches(M, T'', PAT, ASB', 0, SS) /\
-     [SS', STL] := allMatchesFromAllSubs(M, HCS, A, A', reduce(SRL), PAT, ASB, NSB', NCB', R, CTXT, STS, SS, mtSTL)
-     [print "ATOSOC \nT: " T "\nA: " A "\nSB: " SB "\nASB: " ASB "\nHC: " HC "\nCTXT: " CTXT "\n COND: " COND "\nSTL: " STL] . *** /\
+     [SS', STL] := allMatchesFromAllSubs(M, HCS, A, A', reduce(SRL), PAT, ASB, NSB', NCB', R, CTXT, STS, SS, mtSTL) .
      *** STL := createResults(SS', NSB'') .
  eq allTermsOneStepOneClause(M, T, A, PAT, HC, HCS, NSB, NCB, N, SS, STS) = mtSTL [owise] .
 
@@ -437,7 +433,7 @@ fmod TA/BOUNDED-RED is
              else minus(NCB, 1)
              fi /\
      [SB', CS, NSB''] SRL := solveCondition(M, HCS, SB, COND, NSB', NCB', mtCS, STS, R, R) /\ *** Needed PAT and RHS?
-     T' := placeInContext(CTXT, apply(M, R, SB')) [print "OStep \nL: " L "\nR: " R "\nT: " T] .
+     T' := placeInContext(CTXT, apply(M, R, SB')) .
  eq oneStep(M, T, HCS, NSB, NCB, STS) = noReduction [owise] .
 
  op compatible : Substitution Substitution -> Bool .
@@ -688,6 +684,8 @@ endfm
 set print attribute off .
 
 *** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action}, 'Q':Process, hcs, 9, 11, empty, mtSTS) .
+
+red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action} ; Act[TA]{'tau.Action}, 'Q':Process, hcs, 14, 11, empty, mtSTS) .
 
 
 ***(
