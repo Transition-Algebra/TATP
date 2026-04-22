@@ -339,11 +339,11 @@ fmod TA/BOUNDED-RED is
                  then mtSTL
                  else allTermsOneStep(M, T, A ; (A *), PAT, HCS, NSB, NCB, SS, [T, A *] & STS)
                  fi
-  if SS' := allMatches(M, T, PAT, empty, 0, SS) /\
-     STL := createResults(SS', NSB) .
+  if SS' := allMatches(M, T, PAT, none, 0, SS) /\
+     STL := createResults(SS', NSB) [print "A* " T] .
  eq allTermsOneStep(M, T, (A *) ; A', PAT, HCS, NSB, NCB, SS, STS) =
              allTermsOneStep(M, T, A', PAT, HCS, NSB, NCB, SS, STS)
-             allTermsOneStep(M, T, A, (A *) ; A', PAT, HCS, HCS, NSB, NCB, SS, STS) .
+             allTermsOneStep(M, T, A, (A *) ; A', PAT, HCS, HCS, NSB, NCB, SS, STS) [print "A * ; A' " T] .
  eq allTermsOneStep(M, T, A ; A', PAT, HCS, NSB, NCB, SS, STS) =
              allTermsOneStep(M, T, A, A', PAT, HCS, HCS, NSB, NCB, SS, STS) [owise] .
  eq allTermsOneStep(M, T, A, PAT, HCS, NSB, NCB, SS, STS) = allTermsOneStep(M, T, A, PAT, HCS, HCS, NSB, NCB, SS, STS) [owise] .
@@ -694,14 +694,16 @@ cl Trans[TA]{'_|_['P:Process, 'Q:Process] =(Act[TA]{'tau.Action})> '_|_['P':Proc
 
 endfm
 
-set print attribute off .
+*** set print attribute off .
 
 *** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action}, 'Q':Process, hcs, 9, 11, empty, mtSTS) .
 
-*** red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), 'Q':Process, hcs, 14, 14, empty, mtSTS) .
+red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), 'Q':Process, hcs, 14, 14, empty, mtSTS) .
 
+***(
 red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel],
 hcs, 14, 14, empty, mtSTS) .
+)
 
 ***(
  red solveCondition(m, hcs, none,
