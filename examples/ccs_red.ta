@@ -1,0 +1,72 @@
+spec BOOL is
+  sort Bool .
+  ops true, false : () -> Bool .
+endspec
+
+spec CCS is
+  including BOOL .
+
+  sorts Channel, Action .
+  op rcv : Channel -> Action .
+  op snd : Channel -> Action .
+  op tau : () -> Action .
+
+  op _=/=_ : Channel Channel -> Bool [comm] .
+  op _=/=_ : Action Action -> Bool [comm] .
+
+  vars C, C' : Channel .
+  var A : Action .
+
+  ax rcv(C) =/= rcv(C') = C =/= C' .
+  ax snd(C) =/= rcv(C') = true .
+  ax snd(C) =/= snd(C') = C =/= C' .
+  ax tau =/= rcv(C) = true .
+  ax tau =/= snd(C) = true .
+
+  sort Process .
+  op 0 : () -> Process .
+
+  vars P, P', Q, Q' : Process .
+
+  op _._ : Action Process -> Process .
+  ax (A . P) =(A)> P [label: act] .
+
+  op _+_ : Process Process -> Process [assoc comm] .
+  ax (P + Q) =(A)> P' if P =(A)> P' [label: sum] .
+
+  op _|_ : Process Process -> Process [assoc comm] .
+  ax (P | Q) =(A)> (P' | Q) if P =(A)> P' [label: com] .
+  ax (P | Q) =(tau)> (P' | Q') if P =(snd(C))> P' and Q =(rcv(C))> Q' [label: com] .
+
+  op _\_ : Process Channel -> Process .
+  ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true [label: res] .
+
+  sort PDef .
+  op def : () -> PDef .
+
+  ax P =(A)> Q' if P =(def)> Q and Q =(A)> Q' [label: con] .
+  ``` ax P = Q if P =(def)> Q [label: eq-def] . ``` Lack of termination and confluence.
+endspec
+
+spec INSTITUTE is
+  including CCS .
+  ops theorem, coffee, coin : () -> Channel .
+  ax theorem =/= coffee = true .
+  ax theorem =/= coin = true .
+  ax coffee =/= coin = true .
+
+  ops Institute, Mathematician, CoffeeVM : () -> Process .
+  ax Institute =(def)> (Mathematician | CoffeeVM) \ coin \ coffee [label: def-I] .
+  ax Mathematician =(def)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) [label: def-M] .
+  ax CoffeeVM =(def)> (rcv(coin) . snd(coffee) . CoffeeVM) [label: def-C] .
+
+  op thm-gen : () -> Bool .
+  ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> (Mathematician | CoffeeVM) \ coin \ coffee .
+endspec
+
+open INSTITUTE
+  set rewrite bound 14
+  set condition bound 8
+
+  reduce thm-gen
+close

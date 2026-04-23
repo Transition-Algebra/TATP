@@ -14,8 +14,6 @@ sload ./Language.maude
 sload ../../../CommonLibs/Num.maude
 sload ../../../CommonLibs/Narrowing.maude
 
-set print attribute off .
-
 ********************************************************************************
 
 fmod TA/META-OPS is
@@ -609,105 +607,4 @@ fmod TA/CHECK is
   eq print2(L, Q LQ, M) = :[print(L, Q, M)] print2(L, LQ, M) .
 endfm
 
-*** load test/db_trans.ta
-
-********************************************************************************
-
-fmod TEST is
- pr TA/REDUCE .
- pr META-LEVEL .
-
- op m : -> Module .
- eq m =
- (fmod 'FOO is
-  nil
-  sorts 'Action ; 'Bool ; 'Channel ; 'PDef ; 'Process .
-  none
-  op '0 : nil -> 'Process [none] .
-  op 'CoffeeVM : nil -> 'Process [none] .
-  op 'Institute : nil -> 'Process [none] .
-  op 'Mathematician : nil -> 'Process [none] .
-  op '_+_ : 'Process 'Process -> 'Process [assoc comm] .
-  op '_._ : 'Action 'Process -> 'Process [none] .
-  op '_=/=_ : 'Action 'Action -> 'Bool [comm] .
-  op '_=/=_ : 'Channel 'Channel -> 'Bool [comm] .
-  op '_\_ : 'Process 'Channel -> 'Process [none] .
-  op '_|_ : 'Process 'Process -> 'Process [assoc comm] .
-  op 'coffee : nil -> 'Channel [none] .
-  op 'coin : nil -> 'Channel [none] .
-  op 'def : nil -> 'PDef [none] .
-  op 'false : nil -> 'Bool [none] .
-  op 'rcv : 'Channel -> 'Action [none] .
-  op 'snd : 'Channel -> 'Action [none] .
-  op 'tau : nil -> 'Action [none] .
-  op 'theorem : nil -> 'Channel [none] .
-  op 'thm-gen : nil -> 'Bool [none] .
-  op 'true : nil -> 'Bool [none] .
-  none
-  none
-endfm) .
-
- op hcs : -> HClSet{TA} .
- eq hcs =
- (cl Eq[TA]{'thm-gen.Bool = 'true.Bool} if Trans[TA]{'Institute.Process =(Act[TA]{'tau.Action} * ; Act[TA]{'snd['theorem.Channel]} ; Act[TA]{'tau.Action} *)>
-    'Institute.Process}[none].
-cl Eq[TA]{'_=/=_['coffee.Channel, 'coin.Channel] = 'true.Bool} if true[none].
-cl Eq[TA]{'_=/=_['tau.Action, 'rcv['C:Channel]] = 'true.Bool} if true[none].
-cl Eq[TA]{'_=/=_['tau.Action, 'snd['C:Channel]] = 'true.Bool} if true[none].
-cl Eq[TA]{'_=/=_['theorem.Channel, 'coffee.Channel] = 'true.Bool} if true[none].
-cl Eq[TA]{'_=/=_['theorem.Channel, 'coin.Channel] = 'true.Bool} if true[none].
-cl Eq[TA]{'_=/=_['rcv['C:Channel], 'rcv['C':Channel]] = '_=/=_['C:Channel, 'C':Channel]} if true[none].
-cl Eq[TA]{'_=/=_['snd['C:Channel], 'rcv['C':Channel]] = 'true.Bool} if true[none].
-cl Eq[TA]{'_=/=_['snd['C:Channel], 'snd['C':Channel]] = '_=/=_['C:Channel, 'C':Channel]} if true[none].
-cl Trans[TA]{'CoffeeVM.Process =(Act[TA]{'def.PDef})> '_._['rcv['coin.Channel], '_._['snd['coffee.Channel], 'CoffeeVM.Process]]} if true[label('def-C)].
-cl Trans[TA]{'Institute.Process =(Act[TA]{'def.PDef})> '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel]} if true[label(
-    'def-I)].
-cl Trans[TA]{'Mathematician.Process =(Act[TA]{'def.PDef})> '_._['snd['coin.Channel], '_._['rcv['coffee.Channel], '_._['snd['theorem.Channel],
-    'Mathematician.Process]]]} if true[label('def-M)].
-cl Trans[TA]{'P:Process =(Act[TA]{'A:Action})> 'Q':Process} if Trans[TA]{'P:Process =(Act[TA]{'def.PDef})> 'Q:Process} /\ Trans[TA]{'Q:Process =(Act[TA]{
-    'A:Action})> 'Q':Process}[label('con)]. ***
-cl Trans[TA]{'_+_['P:Process, 'Q:Process] =(Act[TA]{'A:Action})> 'P':Process} if Trans[TA]{'P:Process =(Act[TA]{'A:Action})> 'P':Process}[label('sum)].
-cl Trans[TA]{'_._['A:Action, 'P:Process] =(Act[TA]{'A:Action})> 'P:Process} if true[label('act)].
-cl Trans[TA]{'_\_['P:Process, 'C:Channel] =(Act[TA]{'A:Action})> '_\_['P':Process, 'C:Channel]} if Trans[TA]{'P:Process =(Act[TA]{'A:Action})> 'P':Process} /\ Eq[
-    TA]{'_=/=_['snd['C:Channel], 'A:Action] = 'true.Bool} /\ Eq[TA]{'_=/=_['rcv['C:Channel], 'A:Action] = 'true.Bool}[label('res)].
-cl Trans[TA]{'_|_['P:Process, 'Q:Process] =(Act[TA]{'A:Action})> '_|_['P':Process, 'Q:Process]} if Trans[TA]{'P:Process =(Act[TA]{'A:Action})> 'P':Process}[label(
-    'com)].
-cl Trans[TA]{'_|_['P:Process, 'Q:Process] =(Act[TA]{'tau.Action})> '_|_['P':Process, 'Q':Process]} if Trans[TA]{'P:Process =(Act[TA]{'snd['C:Channel]})>
-    'P':Process} /\ Trans[TA]{'Q:Process =(Act[TA]{'rcv['C:Channel]})> 'Q':Process}[label('com)].) .
-
- ops hc1 hc2 hc3 hc4 : -> HornClause{TA} .
- eq hc1 = (cl Trans[TA]{'_|_['P:Process, 'Q:Process] =(Act[TA]{'tau.Action})> '_|_['P':Process, 'Q':Process]} if Trans[TA]{'P:Process =(Act[TA]{'snd['C:Channel]})>
-    'P':Process} /\ Trans[TA]{'Q:Process =(Act[TA]{'rcv['C:Channel]})> 'Q':Process}[label('com)] .) .
- eq hc2 = (cl Trans[TA]{'P:Process =(Act[TA]{'A:Action})> 'Q':Process} if Trans[TA]{'P:Process =(Act[TA]{'def.PDef})> 'Q:Process} /\ Trans[TA]{'Q:Process =(Act[TA]{
-    'A:Action})> 'Q':Process}[label('con)] .) .
- eq hc3 = (cl Trans[TA]{'_._['A:Action, 'P:Process] =(Act[TA]{'A:Action})> 'P:Process} if true[label('act)].) .
- eq hc4 = (cl Trans[TA]{'P:Process =(Act[TA]{'A:Action})> 'Q':Process} if Trans[TA]{'P:Process =(Act[TA]{'def.PDef})> 'Q:Process} /\ Trans[TA]{'Q:Process =(Act[TA]{
-    'A:Action})> 'Q':Process}[label('con)].) .
-
- ops t1 t2 : -> Term .
- eq t1 = ( '_._['snd['coin.Channel], '_._['rcv['coffee.Channel], '_._['snd['theorem.Channel], 'Mathematician.Process]]]) .
-
-endfm
-
-set print attribute on .
-
-*** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action}, 'Q':Process, hcs, 9, 11, empty, mtSTS) .
-
-*** red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), 'Q':Process, hcs, 14, 14, empty, mtSTS) .
-
-***(
-red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel],
-hcs, 14, 9, empty, mtSTS) .
-)
-
-*** red boundedRed(m, 'thm-gen2.Bool, hcs, 14, 8) .
-
-*** red oneStep(m, 'thm-gen2.Bool, hcs, 14, 8, mtSTS) .
-
-***(
- red solveCondition(m, hcs, none,
-   Trans[TA]{'Institute.Process =(Act[TA]{'tau.Action} * ; Act[TA]{'snd['theorem.Channel]} ; Act[TA]{'tau.Action} *)>
-   '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel]}, 14, 10, mtCS, mtSTS, 'true.Bool, 'true.Bool) .
-)
-
-
+set print attribute off .
