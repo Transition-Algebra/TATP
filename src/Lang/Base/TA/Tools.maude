@@ -436,7 +436,7 @@ fmod TA/BOUNDED-RED is
  eq allTermsNextAction(M, A, PAT, HCS, NCB, ST STL, V) = allTermsNextAction(M, A, PAT, HCS, NCB, STL, V) [owise] .
 
  op oneStep : Module Term HClSet{TA} Bound Bound SearchedTermSet -> ReductionTuple .
- ceq oneStep(M, T, HCS, NSB, NCB, STS) = [T', NSB']
+ ceq oneStep(M, T, HCS, NSB, NCB, STS) = [T', NSB'']
   if cl Eq[LA]{L = R} if COND [AtS] . HCS' := HCS /\
      noZero(NSB) /\
      (noZero(NCB) or COND == true) /\
