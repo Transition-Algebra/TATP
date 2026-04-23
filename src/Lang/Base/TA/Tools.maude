@@ -276,11 +276,11 @@ fmod TA/BOUNDED-RED is
  eq createResults((SB, SS), NSB) = result(SB, NSB) createResults(SS, NSB) .
 
  op solveCondition : Module HClSet{TA} ConditionStack Bound SearchedTermSet -> SearchResult .
- ceq solveCondition(M, HCS, < CURR, Act[TA]{T}, PAT, SB, result(SB', NSB) STL, SS > CS, NCB, STS) =
-                                                                [(SB ; SB'), < CURR, Act[TA]{T}, PAT, SB, STL, SS > CS, NSB]
+ ceq solveCondition(M, HCS, < CURR, A, PAT, SB, result(SB', NSB) STL, SS > CS, NCB, STS) =
+                                                                [(SB ; SB'), < CURR, A, PAT, SB, STL, SS > CS, NSB]
   if compatible(SB, SB') .
- ceq solveCondition(M, HCS, < CURR, Act[TA]{T}, PAT, SB, result(SB', NSB) STL, SS > CS, NCB, STS) =
-                                                                solveCondition(M, HCS, < CURR, Act[TA]{T}, PAT, SB, STL, SS > CS, NCB, STS)
+ ceq solveCondition(M, HCS, < CURR, A, PAT, SB, result(SB', NSB) STL, SS > CS, NCB, STS) =
+                                                                solveCondition(M, HCS, < CURR, A, PAT, SB, STL, SS > CS, NCB, STS)
   if not compatible(SB, SB') .
  ceq solveCondition(M, HCS, < L, R > CS, NCB, STS) = if L'' == R''
                                                      then [SB, CS', NSB'']
@@ -340,10 +340,10 @@ fmod TA/BOUNDED-RED is
                  else allTermsOneStep(M, T, A ; (A *), PAT, HCS, NSB, NCB, SS, [T, A *] & STS)
                  fi
   if SS' := allMatches(M, T, PAT, none, 0, SS) /\
-     STL := createResults(SS', NSB) [print "A* " T] .
+     STL := createResults(SS', NSB) [print "A* " T " STS " STS " SS' " SS'] .
  eq allTermsOneStep(M, T, (A *) ; A', PAT, HCS, NSB, NCB, SS, STS) =
              allTermsOneStep(M, T, A', PAT, HCS, NSB, NCB, SS, STS)
-             allTermsOneStep(M, T, A, (A *) ; A', PAT, HCS, HCS, NSB, NCB, SS, STS) [print "A * ; A' " T] .
+             allTermsOneStep(M, T, A, (A *) ; A', PAT, HCS, HCS, NSB, NCB, SS, STS) [print "A* ; A'"] .
  eq allTermsOneStep(M, T, A ; A', PAT, HCS, NSB, NCB, SS, STS) =
              allTermsOneStep(M, T, A, A', PAT, HCS, HCS, NSB, NCB, SS, STS) [owise] .
  eq allTermsOneStep(M, T, A, PAT, HCS, NSB, NCB, SS, STS) = allTermsOneStep(M, T, A, PAT, HCS, HCS, NSB, NCB, SS, STS) [owise] .
@@ -417,13 +417,13 @@ fmod TA/BOUNDED-RED is
              fi /\
      ASB := match(M, apply(A', SB), apply(A, SB)) /\
      RHS := placeInContext(CTXT, R) /\
-     SRL := solveCondition(M, HCS, (SB ; ASB), COND, NSB', NCB', mtCS, STS, PAT, RHS) /\
+     V := freshVar(M, PAT) /\
+     SRL := solveCondition(M, HCS, (SB ; ASB), COND, NSB', NCB', mtCS, STS, V, RHS) /\
      [SB', CS, NSB''] SRL' := SRL /\
      *** ASB' := match(M, A, apply(apply(A', ASB), SB')) /\
      *** T' := placeInContext(CTXT, apply(M, R, SB')) /\
      *** [T'', NSB'''] := $boundedRed(M, T', HCS, NSB', NCB', T' & STS) /\
      *** STL := [T'', A'', NSB''', NCB] .
-     V := freshVar(M, PAT) /\
      [SS', STL] := allMatchesFromAllSubs(M, HCS, A, A', reduce(SRL), V, ASB, NSB', NCB', R, CTXT, STS, SS, mtSTL) /\
      STL' := allTermsNextAction(M, A'', PAT, HCS, NCB, STL, V) .
  eq allTermsOneStepOneClause(M, T, A, A', PAT, HC, HCS, NSB, NCB, N, SS, STS) = mtSTL [owise] .
@@ -508,7 +508,7 @@ fmod TA/REDUCE is
 
   *** reduce  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op reduce : TA Term FModule HClSet{TA} Bound Bound -> ResultPair .
-  eq reduce(L, T, M, HCS, C, R) = boundedRed(M, T, HCS, C, R) [print HCS] .
+  eq reduce(L, T, M, HCS, C, R) = boundedRed(M, T, HCS, C, R) .
 endfm
 
 ********************************************************************************
@@ -698,17 +698,19 @@ endfm
 
 *** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action}, 'Q':Process, hcs, 9, 11, empty, mtSTS) .
 
-red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), 'Q':Process, hcs, 14, 14, empty, mtSTS) .
+*** red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), 'Q':Process, hcs, 14, 14, empty, mtSTS) .
 
 ***(
 red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'snd['theorem.Channel]} ; (Act[TA]{'tau.Action}) *), '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel],
-hcs, 14, 14, empty, mtSTS) .
+hcs, 14, 9, empty, mtSTS) .
 )
+
+red oneStep(M, 'Institute.Process, hcs, 15, 11, mtSTS) .
 
 ***(
  red solveCondition(m, hcs, none,
    Trans[TA]{'Institute.Process =(Act[TA]{'tau.Action} * ; Act[TA]{'snd['theorem.Channel]} ; Act[TA]{'tau.Action} *)>
-   '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel]}, 14, 14, mtCS, mtSTS, 'true.Bool, 'true.Bool) .
+   '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel]}, 14, 10, mtCS, mtSTS, 'true.Bool, 'true.Bool) .
 )
 
 ***(
@@ -735,9 +737,3 @@ red allTermsOneStep(m, '_\_['_\_['_|_['CoffeeVM.Process, 'Mathematician.Process]
 *** red allTermsOneStep(m, 'CoffeeVM.Process, Act[TA]{'tau.Action}, 'PP:Process, hcs, 7, 7, empty, mtSTS) .
 
 *** red allTermsOneStep(m, '_\_['_|_['CoffeeVM.Process, 'Mathematician.Process], 'coin.Channel], Act[TA]{'tau.Action}, 'PP:Process, hcs, 8, 8, empty, mtSTS) .
-
-*** red allTermsOneStep(m, '_|_['CoffeeVM.Process, 'Mathematician.Process], Act[TA]{'tau.Action}, 'P:Process, hcs, 15, 15, empty, mtSTS) .
-
-*** red allTermsOneStep(m, '_|_['Mathematician.Process, 'CoffeeVM.Process], Act[TA]{'tau.Action}, 'P:Process, hcs, 15, 15, empty, mtSTS) .
-
-*** red allTermsOneStep(m, '_|_['Mathematician.Process, 'CoffeeVM.Process], Act[TA]{'tau.Action}, 'PP:Process, hcs, 9, 11, empty, mtSTS) .
