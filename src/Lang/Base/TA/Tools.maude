@@ -340,7 +340,7 @@ fmod TA/BOUNDED-RED is
                  else allTermsOneStep(M, T, A ; (A *), PAT, HCS, NSB, NCB, SS, [T, A *] & STS)
                  fi
   if SS' := allMatches(M, T, PAT, none, 0, SS) /\
-     STL := createResults(SS', NSB) [print "A* " T " STS " STS " SS' " SS'] .
+     STL := createResults(SS', NSB) [print "A* - T: " T " STS " STS " SS' " SS'] .
  eq allTermsOneStep(M, T, (A *) ; A', PAT, HCS, NSB, NCB, SS, STS) =
              allTermsOneStep(M, T, A', PAT, HCS, NSB, NCB, SS, STS)
              allTermsOneStep(M, T, A, (A *) ; A', PAT, HCS, HCS, NSB, NCB, SS, STS) [print "A* ; A'"] .
@@ -436,7 +436,7 @@ fmod TA/BOUNDED-RED is
  eq allTermsNextAction(M, A, PAT, HCS, NCB, ST STL, V) = allTermsNextAction(M, A, PAT, HCS, NCB, STL, V) [owise] .
 
  op oneStep : Module Term HClSet{TA} Bound Bound SearchedTermSet -> ReductionTuple .
- ceq oneStep(M, T, HCS, NSB, NCB, STS) = [T', NSB'']
+ ceq oneStep(M, T, HCS, NSB, NCB, STS) = [T', NSB'] *** NSB''?
   if cl Eq[LA]{L = R} if COND [AtS] . HCS' := HCS /\
      noZero(NSB) /\
      (noZero(NCB) or COND == true) /\
@@ -508,7 +508,7 @@ fmod TA/REDUCE is
 
   *** reduce  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op reduce : TA Term FModule HClSet{TA} Bound Bound -> ResultPair .
-  eq reduce(L, T, M, HCS, C, R) = boundedRed(M, T, HCS, C, R) .
+  eq reduce(L, T, M, HCS, C, R) = boundedRed(M, T, HCS, R, C) .
 endfm
 
 ********************************************************************************
@@ -613,8 +613,6 @@ endfm
 
 ********************************************************************************
 
-set print attribute on .
-
 fmod TEST is
  pr TA/REDUCE .
  pr META-LEVEL .
@@ -644,7 +642,6 @@ fmod TEST is
   op 'tau : nil -> 'Action [none] .
   op 'theorem : nil -> 'Channel [none] .
   op 'thm-gen : nil -> 'Bool [none] .
-  op 'thm-gen2 : nil -> 'Bool [none] .
   op 'true : nil -> 'Bool [none] .
   none
   none
@@ -654,8 +651,6 @@ endfm) .
  eq hcs =
  (cl Eq[TA]{'thm-gen.Bool = 'true.Bool} if Trans[TA]{'Institute.Process =(Act[TA]{'tau.Action} * ; Act[TA]{'snd['theorem.Channel]} ; Act[TA]{'tau.Action} *)>
     'Institute.Process}[none].
-cl Eq[TA]{'thm-gen2.Bool = 'true.Bool} if Trans[TA]{'Institute.Process =(Act[TA]{'tau.Action} * ; Act[TA]{'snd['theorem.Channel]} ; Act[TA]{'tau.Action} *)> '_\_[
-    '_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel]}[none].
 cl Eq[TA]{'_=/=_['coffee.Channel, 'coin.Channel] = 'true.Bool} if true[none].
 cl Eq[TA]{'_=/=_['tau.Action, 'rcv['C:Channel]] = 'true.Bool} if true[none].
 cl Eq[TA]{'_=/=_['tau.Action, 'snd['C:Channel]] = 'true.Bool} if true[none].
@@ -694,7 +689,7 @@ cl Trans[TA]{'_|_['P:Process, 'Q:Process] =(Act[TA]{'tau.Action})> '_|_['P':Proc
 
 endfm
 
-*** set print attribute off .
+set print attribute on .
 
 *** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'tau.Action}, 'Q':Process, hcs, 9, 11, empty, mtSTS) .
 
@@ -705,7 +700,9 @@ red allTermsOneStep(m, 'Institute.Process, (Act[TA]{'tau.Action}) * ; (Act[TA]{'
 hcs, 14, 9, empty, mtSTS) .
 )
 
-red oneStep(M, 'Institute.Process, hcs, 15, 11, mtSTS) .
+*** red boundedRed(m, 'thm-gen2.Bool, hcs, 14, 8) .
+
+*** red oneStep(m, 'thm-gen2.Bool, hcs, 14, 8, mtSTS) .
 
 ***(
  red solveCondition(m, hcs, none,
@@ -713,27 +710,4 @@ red oneStep(M, 'Institute.Process, hcs, 15, 11, mtSTS) .
    '_\_['_\_['_|_['Mathematician.Process, 'CoffeeVM.Process], 'coin.Channel], 'coffee.Channel]}, 14, 10, mtCS, mtSTS, 'true.Bool, 'true.Bool) .
 )
 
-***(
-red allTermsOneStep(m, '_\_['_\_['_|_['_._['rcv['coffee.Channel], '_._['snd['theorem.Channel], 'Mathematician.Process]],
-                                      '_._['snd['coffee.Channel], 'CoffeeVM.Process]],
-    'coin.Channel], 'coffee.Channel], Act[TA]{'tau.Action}, 'Q':Process, hcs, 4, 11, empty, mtSTS) .
-)
 
-***(
-red allTermsOneStep(m, '_\_['_\_['_|_['CoffeeVM.Process,
-                                      '_._['snd['theorem.Channel], 'Mathematician.Process]],
-                                      'coin.Channel], 'coffee.Channel], Act[TA]{'snd['theorem.Channel]},
-                                      'Q':Process, hcs, 2, 11, empty, mtSTS) .
-)
-
-
-*** red allTermsOneStep(m, 'Institute.Process, Act[TA]{'def.PDef}, 'PP:Process, hcs, 15, 15, empty, mtSTS) .
-
-***(
-red allTermsOneStep(m, '_\_['_\_['_|_['CoffeeVM.Process, 'Mathematician.Process], 'coin.Channel],
-   'coffee.Channel], Act[TA]{'tau.Action}, 'PP:Process, hcs, 7, 7, empty, mtSTS) .
-)
-
-*** red allTermsOneStep(m, 'CoffeeVM.Process, Act[TA]{'tau.Action}, 'PP:Process, hcs, 7, 7, empty, mtSTS) .
-
-*** red allTermsOneStep(m, '_\_['_|_['CoffeeVM.Process, 'Mathematician.Process], 'coin.Channel], Act[TA]{'tau.Action}, 'PP:Process, hcs, 8, 8, empty, mtSTS) .
