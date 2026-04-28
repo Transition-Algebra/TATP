@@ -14,6 +14,16 @@ endspec
 `` We prove that NUM |= forall {X:Nat} 0 + X = X if 0 =((next) ^ N)> X,
 `` for all natural numbers N, by induction on N:
 
+open NUM
+icheck forall {X:Nat} 0 + X = X if 0 =((next) ^ N)> X
+  by induction on N
+  using UQ Imp `` for the base case
+  and UQ Imp CompI `` for the induction step
+close
+
+`` Alternatively, we can spell out separately the details of the
+`` proofs for the base case and for the induction step as follows:
+
 `` The base case
 open NUM
   let x : Nat
@@ -28,7 +38,7 @@ open NUM
   `` iterated actions; I used the angle brackets to distinguish it
   `` from the user-defined sort Nat.
   `` This allows us to write the induction hypothesis as follows:
-  suppose forall {X:Nat} 0 + X = X if 0 =((next) ^ n)> X
+  suppose forall {X:Nat} 0 + X = X if 0 =((next) ^ n)> X [label: IH]
   `` To prove the statement, we rephrase the condition
   `` `0 =((next) ^ (s n))> x' as follows:
   let x, z : Nat

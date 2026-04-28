@@ -312,6 +312,7 @@ fmod TA/CMD is
   op Cmd[_]{reduce_} : TA ATerm -> Cmd{TA} [ctor] .
   op Cmd[_]{check_} : TA ATerm -> Cmd{TA} [ctor] .
   op Cmd[_]{echeck_using_} : TA ATerm QidList -> Cmd{TA} [ctor] .
+  op Cmd[_]{icheck_by induction on_using_and_} : TA ATerm Qid QidList QidList -> Cmd{TA} [ctor] .
   op Cmd[_]{set narrowing bound_} : TA Bound -> Cmd{TA} [ctor] .
   op Cmd[_]{set unification bound_} : TA Bound -> Cmd{TA} [ctor] .
   op Cmd[_]{set condition bound_} : TA Bound -> Cmd{TA} [ctor] .

@@ -518,6 +518,7 @@ fmod TA/CHECK is
   protecting META-NARROWING .
   protecting BOUND/OPS .
   protecting PRINTING/COMPAT .
+  protecting ATERM/SUBSTITUTION .
 
   var  L : TA .
   var  SB : SpecBody{TA} .
@@ -533,7 +534,6 @@ fmod TA/CHECK is
   vars D W : Bound .
   vars M NM : Module .
   vars NP X Y A B LHS RHS T : Term .
-  var  E : ATerm .
   var  HCS : HClSet{TA} .
   var  C : Condition{TA} .
   var  C? : [Condition{TA}] .
@@ -605,6 +605,74 @@ fmod TA/CHECK is
   op print2 : TA List{EqQuery} Module -> QidList2 .
   eq print2(L, nil, M) = nil .
   eq print2(L, Q LQ, M) = :[print(L, Q, M)] print2(L, LQ, M) .
+endfm
+
+*** ----------------------------------------------------------------------------
+
+fmod TA/ICHECK is
+  protecting TA/CHECK .
+  protecting ATERM/SUBSTITUTION .
+
+  var  L : TA .
+  var  SB : SpecBody{TA} .
+  var  N : Qid .
+  vars RL IB IS : QidList .
+  vars D W : Bound .
+  vars VD LHS RHS X A E E1 E2 : ATerm .
+  var  V : Variable .
+  var  VS : VariableSet .
+  var  S : Sort .
+  var  SS : SortSet .
+  var  ODS : OpDeclSet .
+  var  PDS : PredDeclSet .
+  var  EDS : SenDeclSet .
+
+  *** icheck  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op icheck : ATerm Qid QidList QidList SpecBody{TA} Bound Bound ~> Bool .
+
+  eq icheck(E, N, IB, IS, SB, D, W)
+  = rl-check(apply(subst(avar(N, '<Nat>), aconst('0, '<Zero>)), E), IB, SB, D, W)
+    and-then
+    rl-check(apply(subst(avar(N, '<Nat>), {'s_[aconst(N, '<Nat>)] : '<Nat>}), E), IS,
+      add-sen(read-sen-decl(TA, apply(subst(avar(N, '<Nat>), aconst(N, '<Nat>)), E), none),
+        add-decl((op N : nil -> '<Nat> [none] .), SB)), D, W) .
+
+  *** rl-check  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op rl-check : ATerm QidList SpecBody{TA} Bound Bound ~> Bool .
+
+  ceq rl-check({'forall__[VD, E] : 'Sentence`{TA`}}, 'UQ RL, SB, D, W)
+   = rl-check(apply(const-subst(TA, VS), E), RL, const-ext(SB, VS), D, W)
+   if VS := read-vars((nil).SpecBody{TA}, VD, all vars) .
+
+  eq rl-check({'_if_[E1, E2] : 'Sentence`{TA`}}, 'Imp RL, SB, D, W)
+    = rl-check(E1, RL, add-sen(read-sen-decl(TA, E2, none), SB), D, W) .
+
+  ceq rl-check(E, 'CompI RL, SB, D, W)
+  = rl-check(E, RL,
+      SpecBody[L]{sorts SS . (op 'Z : nil -> S [none] . ODS) PDS
+        ((sen {'_=_>_[LHS, {'_^_ [A, X] : 'Action`{TA`}}, aconst('Z, S)] : 'AtomicSentence`{TA`}} [none] .)
+         (sen {'_=_>_[aconst('Z, S), A, RHS] : 'AtomicSentence`{TA`}} [none] .)
+         EDS)},
+      D, W)
+   if SpecBody[L]{sorts SS . ODS PDS
+        ((sen {'_=_>_[LHS, {'_^_ [A, {'s_ [X] : '<Nat>}] : 'Action`{TA`}}, RHS] : 'AtomicSentence`{TA`}} [none] .)
+          EDS)} := SB
+      /\ S := annotation(LHS) .
+
+  eq rl-check(E, nil, SB, D, W)
+  = narrow-check(cond(read-formula(TA, E)), SB, D, W) .
+
+  eq rl-check(E, RL, SB, D, W) = false [owise] .
+
+  *** const-subst  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op const-subst : TA VariableSet -> ASubstitution .
+  eq const-subst(L, none) = none .
+  eq const-subst(L, V ; VS) = subst(avar(getName(V), getType(V)), aconst(getName(V), getType(V))) ; const-subst(L, VS) .
+
+  *** const-ext  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op const-ext : SpecBody{TA} VariableSet -> SpecBody{TA} .
+  eq const-ext(SB, none) = SB .
+  eq const-ext(SB, V ; VS) = const-ext(add-decl((op getName(V) : nil -> getType(V) [none] .), SB), VS) .
 endfm
 
 set print attribute off .

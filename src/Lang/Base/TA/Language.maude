@@ -252,6 +252,8 @@ fmod TA/LANGUAGE is
           |  "check_" : 'Sentence [format('b 'so 'd)]
           |  "echeck_using_" : 'Sentence 'LabelList [format('b 'so 'sb 'so 'd)]
           |  "echeck_using(_)" : 'Sentence 'LabelList [format('b 'so 'sb 'd 'so 'b 'o)]
+          |  "icheck_by induction on_using_and_" : 'Sentence 'IVar 'RuleList 'RuleList
+             [format('b 'so 'sb 's 's 'so 'sb 'so 'sb 'so 'd)]
           |  "set narrowing bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set unification bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set condition bound_" : 'Bound [format('b 's 's 'so 'd)]
@@ -268,6 +270,10 @@ fmod TA/LANGUAGE is
          ::= bubble "sentence" [balanced-parentheses exclude ("label:")]
        'LabelList
          ::= bubble "labelList" [exclude ("(" ")")]
+       'IVar
+         ::= token "ivar"
+       'RuleList
+         ::= bubble "ruleList" [balanced-parentheses exclude ("&")]
        'Bound
          ::= token "bound"
      endgr .
@@ -293,11 +299,11 @@ fmod TA/READ is
   var  SB : SpecBody{TA} .
   var  TP : Type .
   var  TPL : TypeList .
-  var  BC Q QI : Qid .
+  vars $ Q QI : Qid .
   vars EVD : Constant .
   vars S O Lb : AConstant .
   var  V : AVariable .
-  vars SL1 SL2 OL OL1 OL2 LbL LbL1 LbL2 A B N : ATerm .
+  vars SL1 SL2 OL OL1 OL2 LbL LbL1 LbL2 IB IS A B N : ATerm .
   vars D E E1 E2 VD VN VL VNL VNL1 VNL2 AtL AtL1 AtL2 T T1 T2 : ATerm .
   var  TL : ATermList .
   var  AtS : AttrSet .
@@ -437,6 +443,10 @@ fmod TA/READ is
      then none
      else plain-term(V) fi .
 
+  op read-ivar : TA ATerm -> Variable .
+  eq read-ivar(L, {$[N] : 'IVar})
+   = var(read-qid(N), '<Nat>) .
+
   *** read-attributes  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op read-attributes : TA ATerm -> AttrSet .
   eq read-attributes(L, {'__[AtL1, AtL2] : 'AttrList})
@@ -504,6 +514,8 @@ fmod TA/READ is
    = Cmd[L]{echeck E using read-qids(LbL)} .
   eq read-cmd(L, {'echeck_using`(_`)[E, LbL] : 'Command})
    = Cmd[L]{echeck E using read-qids(LbL)} .
+  eq read-cmd(L, {'icheck_by`induction`on_using_and_[E, N, IB, IS] : 'Command})
+   = Cmd[L]{icheck E by induction on read-qid(N) using read-qids(IB) and read-qids(IS)} .
   eq read-cmd(L, {'set`narrowing`bound_[B] : 'Command})
    = Cmd[L]{set narrowing bound read-bound(L, B)} .
   eq read-cmd(L, {'set`unification`bound_[B] : 'Command})
@@ -699,6 +711,10 @@ fmod TA/ANALYSIS-STATE is
    if T :: ('GlobalVarDecl ; 'VarDecl`{TA`}) .
 
   ceq AnalysisState[L]{SB & VS & AtS} >>= T
+   = AnalysisState[L]{SB & VS ; read-ivar(L, T) & AtS}
+   if T :: 'IVar .
+
+  ceq AnalysisState[L]{SB & VS & AtS} >>= T
    = AnalysisState[L]{SB & VS & AtS read-attributes(TA, T)}
    if T :: ('Attr ; 'AttrList) .
 
@@ -761,6 +777,7 @@ fmod TA/PARSING is
   vars $D D VD $VL VL VL1 VL2 VNL $VNL VNL1 VNL2 V $VN VN $E E E1 E2 : ATerm .
   vars $AtL AtL AtL1 AtL2 : ATerm .
   vars $T T $B B : ATerm .
+  vars $N N $RL RL $IB IB $IS IS : ATerm .
   var  TL : ATermList .
   vars $ BC Q QI : Qid .
   var  QI? : [Qid] .
@@ -1251,6 +1268,14 @@ fmod TA/PARSING is
         solve L label-list ($LbL)
       ] : 'Command } .
 
+  eq analyse L command {'icheck_by`induction`on_using_and_[$E, $N, $IB, $IS] : 'Command} in SAS
+   = try { 'icheck_by`induction`on_using_and_[
+        analyse L sentence ($E) in SAS >>= $N,
+        solve L ivar ($N) in SAS,
+        solve L rule-list ($IB) in SAS,
+        solve L rule-list ($IS) in SAS
+      ] : 'Command } .
+
   eq analyse L command {'set`narrowing`bound_[$B] : 'Command}
    = try { 'set`narrowing`bound_[analyse L bound ($B)] : 'Command } .
 
@@ -1280,6 +1305,18 @@ fmod TA/PARSING is
 
   eq solve L label-list {$[LbL] : 'LabelList}
    = return {LbL : 'LabelList} .
+
+  *** solve ivar  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
+  op solve_ivar : TA -> AnalysisAction{TA} .
+
+  eq solve L ivar {$[N] : 'IVar}
+   = return {N : 'IVar} .
+
+  *** solve rule-list  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  op solve_rule-list : TA -> AnalysisAction{TA} .
+
+  eq solve L rule-list {$[RL] : 'RuleList}
+   = return {RL : 'RuleList} .
 
   *** analyse bound  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op analyse_bound : TA -> AnalysisAction{TA} .

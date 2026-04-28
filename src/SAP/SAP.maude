@@ -474,14 +474,18 @@ fmod ANALYSIS-OUTCOME* { PTF :: PRINT-TERM-FORMATTING,
   eq $try(QI, AO?, X) = AO? [owise] .
 
   op $seq : QidList2 QidList AnalysisOutcomeList -> AnalysisOutcome .
-  eq $seq(nil, K, (successful-analysis(@TL), AOL?))
-   = successful-analysis(@TL) and-then $seq(nil, K tl-traversal(@TL), AOL?) .
-  eq $seq(:[OP] QLL, K, (successful-analysis(@TL), AOL?))
-   = successful-analysis(@TL) and-then $seq(QLL, K OP tl-traversal(@TL), AOL?) .
-  eq $seq(nil, K, (analysis-error(QIL, WA), AOL?))
-   = analysis-error(QIL, WA >> K) .
-  eq $seq(:[OP] QLL, K, (analysis-error(QIL, WA), AOL?))
-   = analysis-error(QIL, WA >> (K OP)) .
+  ceq $seq(nil, K, (AO?, AOL?))
+   = successful-analysis(@TL) and-then $seq(nil, K tl-traversal(@TL), AOL?)
+   if successful-analysis(@TL) := AO? .
+  ceq $seq(:[OP] QLL, K, (AO?, AOL?))
+   = successful-analysis(@TL) and-then $seq(QLL, K OP tl-traversal(@TL), AOL?)
+   if successful-analysis(@TL) := AO? .
+  ceq $seq(nil, K, (AO?, AOL?))
+   = analysis-error(QIL, WA >> K)
+   if analysis-error(QIL, WA) := AO? .
+  ceq $seq(:[OP] QLL, K, (AO?, AOL?))
+   = analysis-error(QIL, WA >> (K OP))
+   if analysis-error(QIL, WA) := AO? .
   eq $seq(QLL, K, empty) = successful-analysis(empty) .
 
   op try{_:_} : AnalysisOutcome Qid -> AnalysisOutcome .

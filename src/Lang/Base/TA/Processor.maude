@@ -33,15 +33,15 @@ mod TA/PROCESSOR { P :: PID } is
   protecting PID-NAME { P } .
   protecting TA/PARSING-&-PRINTING .
   protecting TA/REDUCE .
-  protecting TA/CHECK .
+  protecting TA/ICHECK .
 
   var  L : TA .
   var  SB : SpecBody{TA} .
   var  SAS : AnalysisState{TA} .
   var  P : P$Pid .
   var  I : Oid .
-  var  O : Qid .
-  vars QIL LbL : QidList .
+  vars N O : Qid .
+  vars QIL LbL IB IS : QidList .
   vars Dcl T E : ATerm .
   var  TL : TermList .
   var  S : Sort .
@@ -153,6 +153,18 @@ mod TA/PROCESSOR { P :: PID } is
       /\ W := unification-bound(L, Atts)
       /\ LQ := narrow(F?, LbL, SB, D, W) .
 
+  crl [TA:icheck] :
+    < $[P] : PROC | executing I command, Atts >
+    do($[P], Cmd[L]{icheck E by induction on N using IB and IS}, SB)
+   => < $[P] : PROC | running, Atts >
+    processed(I, $[P], log('Checking) '\s
+      (print term E given sentence-grammar(SB)) '\n
+      mk-page('Result: '\s
+      if icheck(E, N, IB, IS, SB, D, W) then 'satisfied
+      else 'unknown '`( 'try 'larger 'bounds '`) fi))
+   if D := narrowing-bound(L, Atts)
+      /\ W := unification-bound(L, Atts) .
+  
   rl [TA:set-narrowing-bound] :
     < $[P] : PROC | executing I command, Atts >
     do($[P], Cmd[L]{set narrowing bound B}, SB)
