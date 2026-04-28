@@ -40,9 +40,11 @@ mod TA/PROCESSOR { P :: PID } is
   var  SAS : AnalysisState{TA} .
   var  P : P$Pid .
   var  I : Oid .
+  var  O : Qid .
   vars QIL LbL : QidList .
   vars Dcl T E : ATerm .
   var  TL : TermList .
+  var  S : Sort .
   var  Atts : AttributeSet .
   var  F? : [Condition{TA}] .
   var  FDS : FrmDeclSet{TA} .

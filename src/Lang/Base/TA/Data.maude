@@ -141,7 +141,6 @@ fmod TA/FORMULA is
   op _;_ : Action{TA} Action{TA} -> Action{TA} [ctor assoc prec 31] .
   op _+_ : Action{TA} Action{TA} -> Action{TA} [ctor assoc prec 41] .
   op _* : Action{TA} -> Action{TA} [ctor prec 21] .
-  op _^_ : AtomicAction{TA} Nat -> AtomicAction{TA} [ctor prec 25] .
   op _^_ : Action{TA} Term -> Action{TA} [ctor prec 25] .
   op _^_ : AtomicAction{TA} Constant -> AtomicAction{TA} [ctor prec 25] .
 

@@ -245,7 +245,9 @@ fmod TA/LANGUAGE is
   eq cmd-grammar(L)
    = grammar 'TA/Cmd/Syntax is
        'Command
-         ::= "let_." : 'Declaration [format('b 'so 's 'd)]
+         ::= "let_:_" : 'NeSymbolList 'Sort [format ('b 'so 'sb 'so 'd)]
+          |  "suppose_" : 'Sentence [format('b 'so 'd)]
+          |  "suppose_[_]" : 'Sentence 'NeAttrList [format ('! 'so 's! 'o '! 'o)]
           |  "reduce_" : 'Term [format('b 'so 'd)]
           |  "check_" : 'Sentence [format('b 'so 'd)]
           |  "echeck_using_" : 'Sentence 'LabelList [format('b 'so 'sb 'so 'd)]
@@ -254,13 +256,16 @@ fmod TA/LANGUAGE is
           |  "set unification bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set condition bound_" : 'Bound [format('b 's 's 'so 'd)]
           |  "set rewrite bound_" : 'Bound [format('b 's 's 'so 'd)]
-       'Declaration
-         ::= bubble "declaration"
-             [balanced-parentheses exclude ("including" ".")]
+       'Sort
+         ::= token "sort" [exclude ("," "(" ")")]
+       'NeSymbolList
+         ::= bubble "neSymbolList" [exclude (":")]
+       'NeAttrList
+         ::= bubble "neAttrList" [exclude ("[" "]")]
        'Term
          ::= bubble "term" [balanced-parentheses]
        'Sentence
-         ::= bubble "sentence" [balanced-parentheses]
+         ::= bubble "sentence" [balanced-parentheses exclude ("label:")]
        'LabelList
          ::= bubble "labelList" [exclude ("(" ")")]
        'Bound
@@ -292,7 +297,7 @@ fmod TA/READ is
   vars EVD : Constant .
   vars S O Lb : AConstant .
   var  V : AVariable .
-  vars SL1 SL2 OL1 OL2 LbL LbL1 LbL2 A B N : ATerm .
+  vars SL1 SL2 OL OL1 OL2 LbL LbL1 LbL2 A B N : ATerm .
   vars D E E1 E2 VD VN VL VNL VNL1 VNL2 AtL AtL1 AtL2 T T1 T2 : ATerm .
   var  TL : ATermList .
   var  AtS : AttrSet .
@@ -485,8 +490,12 @@ fmod TA/READ is
 
   *** read command  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --
   op read-cmd : TA ATerm ~> Cmd{TA} .
-  eq read-cmd(L, {'let_.[D] : 'Command})
-   = Cmd[L]{let D} .
+  eq read-cmd(L, {'let_:_[OL, S] : 'Command})
+   = Cmd[L]{let {'ops_:`(`)->_[OL, S] : 'Declaration}} .
+  eq read-cmd(L, {'suppose_[E] : 'Command})
+   = Cmd[L]{let {'ax_[E] : 'Declaration}} .
+  eq read-cmd(L, {'suppose_`[_`][E, AtL] : 'Command})
+   = Cmd[L]{let {'ax_`[_`][E, AtL] : 'Declaration}} .
   eq read-cmd(L, {'reduce_[T] : 'Command})
    = Cmd[L]{reduce T} .
   eq read-cmd(L, {'check_[E] : 'Command})
@@ -1207,8 +1216,22 @@ fmod TA/PARSING is
   *** analyse command  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   op analyse_command : TA -> AnalysisAction{TA} .
 
-  eq analyse L command {'let_.[$D] : 'Command}
-   = try { 'let_.[analyse L $declaration ($D)] : 'Command } .
+  eq analyse L command {'let_:_[$OL, $S] : 'Command}
+   = try { 'let_:_ [
+        solve L op-symbols ($OL),
+        solve L sort ($S) then check that L sort is declared
+      ] : 'Command } .
+
+  eq analyse L command {'suppose_[$E] : 'Command}
+   = try { 'suppose_ [
+        analyse L sentence ($E)
+      ] : 'Command } .
+
+  eq analyse L command {'suppose_`[_`][$E, $AtL] : 'Command}
+   = try { 'suppose_`[_`] [
+        analyse L sentence ($E),
+        solve L sen-attributes ($AtL)
+      ] : 'Command } .
 
   eq analyse L command {'reduce_[$T] : 'Command}
    = try { 'reduce_[analyse L term ($T)] : 'Command } .

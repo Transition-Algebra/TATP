@@ -16,32 +16,23 @@ endspec
 
 `` The base case
 open NUM
-  let op x : () -> Nat .
-  `` This syntax is temporary, something to discuss.
-  `` We could replace it, say, with `let x : () -> Nat'.
-  let ax 0 =((next) ^ 0)> x .
-  `` This syntax is also temporary, I just did not have enough time
-  `` to implement such syntactic sugar.
-  `` We could replace it, say, with `suppose 0 =((next) ^ 0)> x'.
+  let x : Nat
+  suppose 0 =((next) ^ 0)> x
   check 0 + x = x
-  `` Returns `satisfied'.
 close
 
 `` The induction step
 open NUM
-  let op n : () -> <Nat> .
+  let n : <Nat>
   `` Here, <Nat> is the sort of natural numbers used as exponents of
   `` iterated actions; I used the angle brackets to distinguish it
   `` from the user-defined sort Nat.
   `` This allows us to write the induction hypothesis as follows:
-  let ax forall {X:Nat} 0 + X = X if 0 =((next) ^ n)> X .
-  `` To prove the statement, we manually rephrase the condition
+  suppose forall {X:Nat} 0 + X = X if 0 =((next) ^ n)> X
+  `` To prove the statement, we rephrase the condition
   `` `0 =((next) ^ (s n))> x' as follows:
-  let ops x, z : () -> Nat .
-  let ax 0 =((next) ^ n)> z .
-  let ax z =(next)> x .
-  `` I am not sure what would be the best way (if there's any) to
-  `` automate this sort of rephrasing. That's also an issue to discuss.
+  let x, z : Nat
+  suppose 0 =((next) ^ n)> z
+  suppose z =(next)> x
   check 0 + x = x
-  `` Returns `satisfied'.
 close
