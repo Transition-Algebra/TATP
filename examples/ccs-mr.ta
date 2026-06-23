@@ -201,7 +201,12 @@ open OCCURRENCES
     | Collector(Key(0) Key(1), none)
     | Mapper(X1, KS:KeySet, 100)
     | Node(X2, 101)
-  using com con def-JobManager com com con def-TaskDistributor con def-Node act act
+  using (com
+         con def-JobManager
+         com com
+         con def-TaskDistributor
+         con def-Node
+         act act)
     `` satisfied in approximately 4 minutes
 
   echeck
@@ -218,6 +223,9 @@ open OCCURRENCES
     | Collector(Key(0) Key(1), none)
     | Mapper(X1, KS1:KeySet, 100)
     | Mapper(X2, KS2:KeySet, 101)
-  using com`` com con def-TaskDistributor con def-Node act act
+  using (com com
+         con def-TaskDistributor
+         con def-Node
+         act act)
   `` satisfied in in approximately 1 hour and 12 minutes
 close
