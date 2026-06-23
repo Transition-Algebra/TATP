@@ -1,0 +1,223 @@
+spec BOOL is
+  sort Bool .
+  ops true, false : () -> Bool .
+endspec
+
+spec CCS is
+  including BOOL .
+
+  sorts Channel, Action .
+  op rcv : Channel -> Action .
+  op snd : Channel -> Action .
+  op tau : () -> Action .
+
+  op _=/=_ : Channel Channel -> Bool [comm] .
+  op _=/=_ : Action Action -> Bool [comm] .
+
+  vars C, C' : Channel .
+  var A : Action .
+
+  ax rcv(C) =/= rcv(C') = C =/= C' .
+  ax snd(C) =/= rcv(C') = true .
+  ax snd(C) =/= snd(C') = C =/= C' .
+  ax tau =/= rcv(C) = true .
+  ax tau =/= snd(C) = true .
+
+  sort Process .
+  op 0 : () -> Process .
+
+  vars P, P', Q, Q' : Process .
+
+  op _._ : Action Process -> Process .
+  ax (A . P) =(A)> P [label: act] .
+
+  op _+_ : Process Process -> Process [assoc comm] .
+  ax (P + Q) =(A)> P' if P =(A)> P' [label: sum] .
+
+  op _|_ : Process Process -> Process [assoc comm] .
+  ax (P | Q) =(A)> (P' | Q) if P =(A)> P' [label: com] .
+  ax (P | Q) =(tau)> (P' | Q') if P =(snd(C))> P' and Q =(rcv(C))> Q' [label: com] .
+
+  op _\_ : Process Channel -> Process .
+  ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true [label: res] .
+
+  sort ProcDef .
+  op def : () -> ProcDef .
+  ax P =(A)> Q' if P =(def)> Q and Q =(A)> Q' [label: con] .
+endspec
+
+spec MAP-REDUCE is
+  including CCS .
+
+  `` Suppose we want to compute f(KS:KeySet, DS:DataSet)
+  `` where f is a function Key Data -> Value
+  `` KS is a finite set of so-called keys
+  `` and DS is a dataset distributed across some 'nodes' X1, X2, ..., Xn
+  ``
+  `` - the output of f is meant to be computed, as much as possible,
+  ``   locally at each node
+  `` - and then aggregated by some manager of the whole computation
+
+  sorts Key, KeySet .
+  op none : () -> KeySet .
+  op Key : Key -> KeySet .
+  op __ : KeySet KeySet -> KeySet [assoc comm id: (none)] .
+
+  sorts Id, IdSet .
+  op none : () -> IdSet .
+  op Id : Id -> IdSet .
+  op __ : IdSet IdSet -> IdSet [assoc comm id: (none)] .
+
+  sorts Data, Value .
+  op f : Key Data -> Value .
+  op 0 : () -> Value .
+  op _+_ : Value Value -> Value [assoc id: (0)] .
+
+  sorts KVSet .
+  op none : () -> KVSet .
+  op <_:_> : Key Value -> KVSet .
+  op __ : KVSet KVSet -> KVSet [assoc comm id: (none)] .
+  
+  ops JobManager, TaskDistributor, TaskMonitor : KeySet IdSet -> Process .
+  op Node : Id Data -> Process .
+  op Mapper : Id KeySet Data -> Process .
+  op Reducers : KeySet -> Process .
+  op Reducer : Key Value -> Process .
+  op Collector : KeySet KVSet -> Process .
+
+  op map : KeySet Id -> Channel .
+  ops local-output, global-output : Key Value -> Channel .
+  op eom : Id -> Channel .
+  op eor : Key -> Channel .
+
+  var  K : Key .
+  var  KS : KeySet .
+  var  X : Id .
+  var  IdS : IdSet .
+  vars R, V : Value .
+  var  KVS : KVSet .
+  var  D : Data .
+
+  ax JobManager(KS, IdS)
+     =(def)> TaskDistributor(KS, IdS)
+           | TaskMonitor(KS, IdS)
+           | Reducers(KS)
+           | Collector(KS, none)
+     [label: def-JobManager] .
+
+  ax TaskDistributor(KS, Id(X) IdS)
+     =(def)> (snd(map(KS, X)) . TaskDistributor(KS, IdS))
+     [label: def-TaskDistributor] .
+  ax TaskDistributor(KS, none)
+     =(def)> 0
+     [label: def-TaskDistributor] .
+
+  ax TaskMonitor(KS, Id(X) IdS)
+     =(def)> (rcv(eom(X)) . TaskMonitor(KS, IdS))
+     [label: def-TaskMonitor] .
+  ax TaskMonitor(Key(K) KS, none)
+     =(def)> (snd(eor(K)) . TaskMonitor(KS, none))
+     [label: def-TaskMonitor] .
+  ax TaskMonitor(none, none)
+     =(def)> 0
+     [label: def-TaskMonitor] .
+
+  ax Reducers(Key(K) KS)
+     =(def)> Reducer(K, 0)
+           | Reducers(KS)
+     [label: def-Reducers] .
+  ax Reducers(none)
+     =(def)> 0
+     [label: def-Reducers] .
+
+  ax Collector(Key(K) KS, KVS)
+     =(def)> (rcv(global-output(K, V)) . Collector(KS, < K : V > KVS))
+     [label: def-Collector] .
+
+  ax Node(X, D)
+     =(def)> (rcv(map(KS, X)) . Mapper(X, KS, D))
+     [label: def-Node] .
+  ax Mapper(X, Key(K) KS, D)
+     =(def)> (snd(local-output(K, f(K, D))) . Mapper(X, KS, D))
+     [label: def-Mapper] .
+  ax Mapper(X, none, D)
+     =(def)> (snd(eom(X)) . Node(X, D))
+     [label: def-Mapper] .
+
+  ax Reducer(K, R)
+     =(def)> ((rcv(local-output(K, V)) . Reducer(K, R + V))
+            + (rcv(eor(K)) . snd(global-output(K, R)) . 0))
+     [label: def-Reducer] .
+endspec
+
+`` The following example shows how the occurrences of 0 and 1 could be
+`` counted in a distributed database of bit strings using map-reduce.
+
+spec OCCURRENCES is
+  including MAP-REDUCE .
+
+  ops X1, X2 : () -> Id .
+  ops 0, 1 : () -> Key .
+  ops 100, 101 : () -> Data .
+
+  op 0 : () -> Value .
+  op s_ : Value -> Value .
+
+  vars M, N : Value .
+  ax 0 + N = N .
+  ax (s M) + N = s (M + N) .
+
+  ax f(0, 100) = s s 0 .
+  ax f(1, 100) = s 0 .
+  ax f(0, 101) = s 0 .
+  ax f(1, 101) = s s 0 .
+endspec
+
+`` We'd like to check a property of the form
+``
+``      JobManager(Key(0) Key(1), Id(X1) Id(X2))
+``      | Node(X1, 100)
+``      | Node(X2, 101)
+``    =(A:Action)>
+``      Collector(none, KVS:KVSet)
+``      | Node(X1, 100)
+``      | Node(X2, 101))
+``
+`` meaning that the computation concludes with the output
+`` KVS (i.e., < 0 : 3 > < 1 : 3 >) under action A (tau*).
+
+`` That's too difficult to check directly, so here are
+`` the first two transitions:
+
+open OCCURRENCES
+  echeck
+    JobManager(Key(0) Key(1), Id(X1) Id(X2))
+    | Node(X1, 100)
+    | Node(X2, 101)
+  =(tau)>
+    TaskDistributor(Key(0) Key(1), Id(X2))
+    | TaskMonitor(Key(0) Key(1), Id(X1) Id(X2))
+    | Reducers(Key(0) Key(1))
+    | Collector(Key(0) Key(1), none)
+    | Mapper(X1, KS:KeySet, 100)
+    | Node(X2, 101)
+  using com con def-JobManager com com con def-TaskDistributor con def-Node act act
+    `` satisfied in approximately 4 minutes
+
+  echeck
+    TaskDistributor(Key(0) Key(1), Id(X2))
+    | TaskMonitor(Key(0) Key(1), Id(X1) Id(X2))
+    | Reducers(Key(0) Key(1))
+    | Collector(Key(0) Key(1), none)
+    | Mapper(X1, KS1:KeySet, 100)
+    | Node(X2, 101)
+  =(tau)>
+    TaskDistributor(Key(0) Key(1), none)
+    | TaskMonitor(Key(0) Key(1), Id(X1) Id(X2))
+    | Reducers(Key(0) Key(1))
+    | Collector(Key(0) Key(1), none)
+    | Mapper(X1, KS1:KeySet, 100)
+    | Mapper(X2, KS2:KeySet, 101)
+  using com`` com con def-TaskDistributor con def-Node act act
+  `` satisfied in in approximately 1 hour and 12 minutes
+close
