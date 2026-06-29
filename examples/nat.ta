@@ -1,0 +1,112 @@
+spec NAT is
+  sort Nat .
+  op 0 : () -> Nat .
+  op s_ : Nat -> Nat .
+endspec
+
+spec SUCC is
+  including NAT .
+  sort Label .
+  op succ : () -> Label .
+  vars x, y : Nat .
+  ax x =(succ)> s x [label: succ-a] .
+  ax y = s x if x =(succ)> y [label: succ-b] .
+endspec
+
+spec NAT-ADD-REACH is
+  including NAT .
+  including SUCC .
+  op _+_ : Nat Nat -> Nat .
+  vars x, y : Nat .
+  ax x + 0 = x if 0 =((succ)*)> x .
+  ax x + s y = s (x + y) if 0 =((succ)*)> x and 0 =((succ)*)> y .
+endspec
+
+load bool.ta
+
+spec NAT-LEQ is
+  including NAT .
+  including BOOL .
+  op _<=_ : Nat Nat -> Bool .
+  vars x, y : Nat .
+  ax (0 <= y) = true .
+  ax (s x <= 0) = false .
+  ax (s x <= s y) = (x <= y) .
+endspec
+
+spec NAT-LIST is
+  including NAT .
+  sort NatList .
+  op empty : () -> NatList .
+  op i : Nat -> NatList .
+  op _;_ : NatList NatList -> NatList .
+  vars z, z1, z2, z3 : NatList .
+  ax empty ; z = z [label: id0] .
+  ax z ; empty = z [label: id1] .
+  ax (z1 ; z2) ; z3 = z1 ; (z2 ; z3) [label: dt] .
+endspec
+
+spec BUBBLE is
+  including NAT-LIST .
+  including NAT-LEQ .
+  vars x, y : Nat .
+  vars z1, z2 : NatList .
+  ax z1 ; (i(x) ; (i(y) ; z2)) =(true)> z1 ; (i(y) ; (i(x) ; z2)) if (y <= x) = true [label: tr1] .
+  ax z1 ; (i(x) ; i(y)) =(true)> z1 ; (i(y) ; i(x)) if (y <= x) = true [label: tr2] .
+  ax i(x) ; i(y) =(true)> i(y) ; i(x) if (y <= x) = true [label: tr3] .
+endspec
+
+spec EX1 is
+  including BOOL .
+  including NAT .
+  var x : Nat .
+  ax 0 =(true)> 0 .
+  ax s x =(false)> s 0 .
+  ax 0 = s 0 .
+  ax s x = s s x .
+endspec
+
+spec NAT-ADD is
+  including NAT .
+  including SUCC .
+  op _+_ : Nat Nat -> Nat .
+  vars x, y : Nat .
+  ax x + 0 = x [label: add-base] .
+  ax x + s y = s (x + y) [label: add-ind] .
+endspec
+
+`` We prove that NAT-ADD |= forall {X:Nat} 0 + X = X if 0 =((succ) ^ N)> X,
+`` for all natural numbers N, by induction on N:
+
+open NAT-ADD
+icheck forall {X:Nat} 0 + X = X if 0 =((succ) ^ N)> X
+  by induction on N
+  using UQ Imp `` for the base case
+  and UQ Imp CompI `` for the induction step
+close
+
+`` Alternatively, we can spell out separately the details of the
+`` proofs for the base case and for the induction step as follows:
+
+`` The base case
+open NAT-ADD
+  let x : Nat
+  suppose 0 =((succ) ^ 0)> x
+  check 0 + x = x
+close
+
+`` The induction step
+open NAT-ADD
+  let n : <Nat>
+  `` Here, <Nat> is the sort of natural numbers used as exponents of
+  `` iterated actions; I used the angle brackets to distinguish it
+  `` from the user-defined sort Nat.
+  `` This allows us to write the induction hypothesis as follows:
+  suppose forall {X:Nat} 0 + X = X if 0 =((succ) ^ n)> X [label: IH]
+  `` To prove the statement, we rephrase the condition
+  `` `0 =((succ) ^ (s n))> x' as follows:
+  let x, z : Nat
+  suppose 0 =((succ) ^ n)> z
+  suppose z =(succ)> x
+  check 0 + x = x
+close

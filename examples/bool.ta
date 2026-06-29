@@ -1,0 +1,4 @@
+spec BOOL is
+  sort Bool .
+  ops true, false : () -> Bool .
+endspec
