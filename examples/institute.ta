@@ -1,0 +1,36 @@
+load ccs.ta
+
+spec INSTITUTE is
+  including CCS .
+  ops theorem, coffee, coin : () -> Channel .
+  ax theorem =/= coffee = true .
+  ax theorem =/= coin = true .
+  ax coffee =/= coin = true .
+
+  ops Mathematician, CoffeeVM, Institute : () -> Process .
+  ax Mathematician =(def)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) [label: def-M] .
+  ax CoffeeVM =(def)> (rcv(coin) . snd(coffee) . CoffeeVM) [label: def-C] .
+  ax Institute = (Mathematician | CoffeeVM) \ coin \ coffee .
+
+  op thm-gen : () -> Bool .
+  ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute .
+endspec
+
+open INSTITUTE
+  set rewrite bound 24
+  set condition bound 4
+  reduce thm-gen
+  `` reduced to `true' in approximately 2 seconds
+  echeck Institute =((A:Action)* ; (snd(theorem)) ; (B:Action)*)> Institute
+  using (comp comp
+         star comp
+         res res scom
+         con def-M act
+         con def-C act
+         star comp
+         res res scom
+         act act star
+         res res ucom
+         act star)
+  `` solved in approximately 28 seconds
+close

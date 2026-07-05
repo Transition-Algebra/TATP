@@ -1,0 +1,196 @@
+load ccs.ta
+
+spec MAP-REDUCE is
+  including CCS .
+
+  `` Suppose we want to compute f(KS:KeySet, DS:DataSet)
+  `` where f is a function Key Data -> Value
+  `` KS is a finite set of so-called keys
+  `` and DS is a dataset distributed across some 'nodes' X1, X2, ..., Xn
+  ``
+  `` - the output of f is meant to be computed, as much as possible,
+  ``   locally at each node
+  `` - and then aggregated by some manager of the whole computation
+
+  sorts Key, KeySet .
+  op none : () -> KeySet .
+  op Key : Key -> KeySet .
+  op __ : KeySet KeySet -> KeySet [assoc comm id: (none)] .
+
+  sorts Id, IdSet .
+  op none : () -> IdSet .
+  op Id : Id -> IdSet .
+  op __ : IdSet IdSet -> IdSet [assoc comm id: (none)] .
+
+  sorts Data, Value .
+  op f : Key Data -> Value .
+  op 0 : () -> Value .
+  op _+_ : Value Value -> Value [assoc comm] .
+
+  var V : Value .
+  ax 0 + V = V .
+  ax V + 0 = V .
+
+  sorts KVSet .
+  op none : () -> KVSet .
+  op <_:_> : Key Value -> KVSet .
+  op __ : KVSet KVSet -> KVSet [assoc comm id: (none)] .
+  
+  ops JobManager, TaskDistributor, TaskMonitor : KeySet IdSet -> Process .
+  op Node : Id Data -> Process .
+  op Mapper : Id KeySet Data -> Process .
+  op Reducers : KeySet -> Process .
+  op Reducer : Key Value -> Process .
+  op Collector : KeySet KVSet -> Process .
+
+  op map : KeySet Id -> Channel .
+  ops local-output, global-output : Key Value -> Channel .
+  op eom : Id -> Channel .
+  op eor : Key -> Channel .
+
+  var K : Key .
+  var KS : KeySet .
+  var X : Id .
+  var IdS : IdSet .
+  var R : Value .
+  var KVS : KVSet .
+  var D : Data .
+
+  ax JobManager(KS, IdS)
+     =(def)> TaskDistributor(KS, IdS)
+           | TaskMonitor(KS, IdS)
+           | Reducers(KS)
+           | Collector(KS, none)
+     [label: def-JobManager] .
+
+  ax TaskDistributor(KS, Id(X) IdS)
+     =(def)> (snd(map(KS, X)) . TaskDistributor(KS, IdS))
+     [label: def-TaskDistributor] .
+  ax TaskDistributor(KS, none)
+     =(def)> 0
+     [label: def-TaskDistributor] .
+
+  ax TaskMonitor(KS, Id(X) IdS)
+     =(def)> (rcv(eom(X)) . TaskMonitor(KS, IdS))
+     [label: def-TaskMonitor] .
+  ax TaskMonitor(Key(K) KS, none)
+     =(def)> (snd(eor(K)) . TaskMonitor(KS, none))
+     [label: def-TaskMonitor] .
+  ax TaskMonitor(none, none)
+     =(def)> 0
+     [label: def-TaskMonitor] .
+
+  ax Reducers(Key(K) KS)
+     =(def)> Reducer(K, 0)
+           | Reducers(KS)
+     [label: def-Reducers] .
+  ax Reducers(none)
+     =(def)> 0
+     [label: def-Reducers] .
+
+  ax Collector(Key(K) KS, KVS)
+     =(def)> (rcv(global-output(K, V)) . Collector(KS, < K : V > KVS))
+     [label: def-Collector] .
+
+  ax Node(X, D)
+     =(def)> (rcv(map(KS, X)) . Mapper(X, KS, D))
+     [label: def-Node] .
+  ax Mapper(X, Key(K) KS, D)
+     =(def)> (snd(local-output(K, f(K, D))) . Mapper(X, KS, D))
+     [label: def-Mapper] .
+  ax Mapper(X, none, D)
+     =(def)> (snd(eom(X)) . Node(X, D))
+     [label: def-Mapper] .
+
+  ax Reducer(K, R)
+     =(def)> ((rcv(local-output(K, V)) . Reducer(K, R + V))
+            + (rcv(eor(K)) . snd(global-output(K, R)) . 0))
+     [label: def-Reducer] .
+endspec
+
+open MAP-REDUCE
+  let X1, X2 : Id
+  let D1, D2 : Data
+  let K1, K2 : Key
+  echeck
+    JobManager(Key(K1) Key(K2), Id(X1) Id(X2))
+    | Node(X1, D1)
+    | Node(X2, D2)
+  =((tau)*)>
+    Collector(none, < K1 : f(K1, D1) + f(K1, D2) > < K2 : f(K2, D1) + f(K2, D2) >)
+    | Node(X1, D1)
+    | Node(X2, D2)
+  using (star comp
+         `` 1st transition
+         scom
+         con def-JobManager
+         ucom con def-TaskDistributor act
+         ucom con def-Node act
+         star comp
+         `` 2nd transition
+         ucom scom
+         con def-TaskDistributor act
+         con def-Node act
+         star comp
+         `` 3rd transition
+         ucom
+         scom
+         con def-Mapper act
+         con def-Reducers
+         ucom con def-Reducer sum act
+         star comp
+         `` 4th transition
+         ucom
+         scom
+         con def-Mapper act
+         con def-Reducers
+         con def-Reducer sum act
+         star comp
+         `` 5th transition
+         ucom
+         scom
+         con def-Mapper act
+         con def-Reducer sum act
+         star comp
+         `` 6th transition
+         ucom
+         scom
+         con def-Mapper act
+         con def-Reducer sum act
+         star comp
+         `` 7th transition
+         ucom
+         scom
+         con def-Mapper act
+         con def-TaskMonitor act
+         star comp
+         `` 8th transition
+         ucom scom
+         con def-Mapper act
+         con def-TaskMonitor act
+         star comp
+         `` 9th transition
+         ucom
+         scom
+         con def-TaskMonitor act
+         con def-Reducer sum act
+         star comp
+         `` 10th transition
+         ucom
+         scom
+         con def-TaskMonitor act
+         con def-Reducer sum act
+         star comp
+         `` 11th transition
+         ucom
+         scom
+         act
+         con def-Collector act
+         star comp
+         `` 12th transition
+         ucom
+         scom
+         act
+         con def-Collector act)
+  `` satisfied in 1.3 hours
+close

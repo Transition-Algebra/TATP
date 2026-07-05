@@ -1,7 +1,4 @@
-spec BOOL is
-  sort Bool .
-  ops true, false : () -> Bool .
-endspec
+load bool.ta
 
 spec CCS is
   including BOOL .
@@ -26,17 +23,20 @@ spec CCS is
   sort Process .
   op 0 : () -> Process .
 
-  vars P, P', Q, Q' : Process .
+  vars P, P', Q, Q', R : Process .
 
   op _._ : Action Process -> Process .
   ax (A . P) =(A)> P [label: act] .
 
   op _+_ : Process Process -> Process [assoc comm] .
   ax (P + Q) =(A)> P' if P =(A)> P' [label: sum] .
+  ax P + P = P .
+  ax P + 0 = P .
 
   op _|_ : Process Process -> Process [assoc comm] .
-  ax (P | Q) =(A)> (P' | Q) if P =(A)> P' [label: com] .
-  ax (P | Q) =(tau)> (P' | Q') if P =(snd(C))> P' and Q =(rcv(C))> Q' [label: com] .
+  ax (P | Q) =(A)> R if P =(A)> P' and R = P' | Q [label: ucom] .
+  ax (P | Q) =(tau)> R if P =(snd(C))> P' and Q =(rcv(C))> Q' and R = P' | Q' [label: scom] .
+  ax P | 0 = P .
 
   op _\_ : Process Channel -> Process .
   ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true [label: res] .
@@ -44,39 +44,6 @@ spec CCS is
   sort ProcDef .
   op def : () -> ProcDef .
   ax P =(A)> Q' if P =(def)> Q and Q =(A)> Q' [label: con] .
+  ax P + Q = Q if P =(def)> 0 .
+  ax P | Q = Q if P =(def)> 0 .
 endspec
-
-spec INSTITUTE is
-  including CCS .
-  ops theorem, coffee, coin : () -> Channel .
-  ax theorem =/= coffee = true .
-  ax theorem =/= coin = true .
-  ax coffee =/= coin = true .
-
-  ops Mathematician, CoffeeVM, Institute : () -> Process .
-  ax Mathematician =(def)> (snd(coin) . rcv(coffee) . snd(theorem) . Mathematician) [label: def-M] .
-  ax CoffeeVM =(def)> (rcv(coin) . snd(coffee) . CoffeeVM) [label: def-C] .
-  ax Institute = (Mathematician | CoffeeVM) \ coin \ coffee .
-
-  op thm-gen : () -> Bool .
-  ax thm-gen = true if Institute =((tau)* ; (snd(theorem)) ; (tau)*)> Institute .
-endspec
-
-open INSTITUTE
-  set rewrite bound 14
-  set condition bound 3
-  reduce thm-gen
-  `` reduced to `true' in approximately 2 seconds
-  echeck Institute =((A:Action)* ; (snd(theorem)) ; (B:Action)*)> Institute
-  using (comp comp
-         star comp
-         res res com
-         con def-M act
-         con def-C act
-         star comp
-         res res com
-         act act star
-         res res com
-         act star)
-  `` solved in approximately 24 seconds
-close

@@ -1,0 +1,56 @@
+load bool.ta
+
+spec CCS is
+  including BOOL .
+
+  sorts Channel, Action .
+  op rcv : Channel -> Action .
+  op snd : Channel -> Action .
+  op tau : () -> Action .
+
+  op _=/=_ : Channel Channel -> Bool [comm] .
+  op _=/=_ : Action Action -> Bool [comm] .
+
+  vars C, C' : Channel .
+  var A : Action .
+
+  ax rcv(C) =/= rcv(C') = C =/= C' .
+  ax snd(C) =/= rcv(C') = true .
+  ax snd(C) =/= snd(C') = C =/= C' .
+  ax tau =/= rcv(C) = true .
+  ax tau =/= snd(C) = true .
+
+  sort Process .
+  op 0 : () -> Process .
+
+  vars M, M', P, P', Q, Q', R : Process .
+
+  op _._ : Action Process -> Process .
+  ax (A . P) =(A)> P [label: act] .
+
+  op _+_ : Process Process -> Process [assoc comm] .
+  ax (P + Q) =(A)> P' if P =(A)> P' [label: sum] .
+  ax P + P = P .
+  ax P + 0 = P .
+
+  op _|_ : Process Process -> Process [assoc] .
+  ax (P | Q) =(A)> R if P =(A)> P' and R = P' | Q [label: ucom-l] .
+  ax (P | Q) =(A)> R if Q =(A)> Q' and R = P | Q' [label: ucom-r] .
+  ax (P | M | Q) =(A)> R if M =(A)> M' and R = P | M' | Q [label: ucom-m] .
+  ax (P | Q) =(tau)> R if P =(snd(C))> P' and Q =(rcv(C))> Q' and R = P' | Q' [label: scom-sr] .
+  ax (P | M | Q) =(tau)> R if P =(snd(C))> P' and Q =(rcv(C))> Q' and R = P' | M | Q' [label: scom-srm] .
+  ax (P | Q) =(tau)> R if P =(rcv(C))> P' and Q =(snd(C))> Q' and R = P' | Q' [label: scom-rs] .
+  ax (P | M | Q) =(tau)> R if P =(rcv(C))> P' and Q =(snd(C))> Q' and R = P' | M | Q' [label: scom-rsm] .
+  ax P | 0 = P .
+  ax 0 | Q = Q .
+
+  op _\_ : Process Channel -> Process .
+  ax (P \ C) =(A)> (P' \ C) if P =(A)> P' and snd(C) =/= A = true and rcv(C) =/= A = true [label: res] .
+
+  sort ProcDef .
+  op def : () -> ProcDef .
+  ax P =(A)> Q' if P =(def)> Q and Q =(A)> Q' [label: con] .
+  ax P + Q = Q if P =(def)> 0 .
+  ax P | Q = Q if P =(def)> 0 .
+  ax P | Q = P if Q =(def)> 0 .
+endspec
