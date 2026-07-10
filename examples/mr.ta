@@ -3,39 +3,29 @@ load ccs.ta
 spec MAP-REDUCE is
   including CCS .
 
-  `` Suppose we want to compute f(KS:KeySet, DS:DataSet)
-  `` where f is a function Key Data -> Value
-  `` KS is a finite set of so-called keys
-  `` and DS is a dataset distributed across some 'nodes' X1, X2, ..., Xn
-  ``
-  `` - the output of f is meant to be computed, as much as possible,
-  ``   locally at each node
-  `` - and then aggregated by some manager of the whole computation
+  sorts Id, IdSet .
+  op none : () -> IdSet .
+  op Id : Id -> IdSet .
+  op __ : IdSet IdSet -> IdSet [assoc comm id: (none)] .
+
+  sort Data .
 
   sorts Key, KeySet .
   op none : () -> KeySet .
   op Key : Key -> KeySet .
   op __ : KeySet KeySet -> KeySet [assoc comm id: (none)] .
 
-  sorts Id, IdSet .
-  op none : () -> IdSet .
-  op Id : Id -> IdSet .
-  op __ : IdSet IdSet -> IdSet [assoc comm id: (none)] .
-
-  sorts Data, Value .
-  op f : Key Data -> Value .
+  sort Value .
   op 0 : () -> Value .
-  op _+_ : Value Value -> Value [assoc comm] .
-
-  var V : Value .
-  ax 0 + V = V .
-  ax V + 0 = V .
+  op _+_ : Value Value -> Value [assoc comm id: (0)] .
 
   sorts KVSet .
   op none : () -> KVSet .
   op <_:_> : Key Value -> KVSet .
   op __ : KVSet KVSet -> KVSet [assoc comm id: (none)] .
-  
+
+  op f : Key Data -> Value .
+
   ops JobManager, TaskDistributor, TaskMonitor : KeySet IdSet -> Process .
   op Node : Id Data -> Process .
   op Mapper : Id KeySet Data -> Process .
@@ -48,13 +38,13 @@ spec MAP-REDUCE is
   op eom : Id -> Channel .
   op eor : Key -> Channel .
 
-  var K : Key .
-  var KS : KeySet .
-  var X : Id .
-  var IdS : IdSet .
-  var R : Value .
-  var KVS : KVSet .
-  var D : Data .
+  var  K : Key .
+  var  KS : KeySet .
+  var  X : Id .
+  var  IdS : IdSet .
+  vars V, R : Value .
+  var  KVS : KVSet .
+  var  D : Data .
 
   ax JobManager(KS, IdS)
      =(def)> TaskDistributor(KS, IdS)
@@ -118,21 +108,23 @@ open MAP-REDUCE
     | Node(X2, D2)
   =((tau)*)>
     Collector(none, < K1 : f(K1, D1) + f(K1, D2) > < K2 : f(K2, D1) + f(K2, D2) >)
-    | Node(X1, D1)
-    | Node(X2, D2)
+    | R:Process
   using (star comp
          `` 1st transition
+         `` initialize the 1st mapper through the synchronization of TaskDistributor and one of the nodes
          scom
          con def-JobManager
          ucom con def-TaskDistributor act
          ucom con def-Node act
          star comp
          `` 2nd transition
+         `` initialize the 2nd mapper through the synchronization of TaskDistributor and the remaining node
          ucom scom
          con def-TaskDistributor act
          con def-Node act
          star comp
          `` 3rd transition
+         `` initialize the 1st reducer and deliver the first local output to it
          ucom
          scom
          con def-Mapper act
@@ -140,6 +132,7 @@ open MAP-REDUCE
          ucom con def-Reducer sum act
          star comp
          `` 4th transition
+         `` initialize the 2nd reducer and deliver the next local output
          ucom
          scom
          con def-Mapper act
@@ -147,50 +140,59 @@ open MAP-REDUCE
          con def-Reducer sum act
          star comp
          `` 5th transition
+         `` deliver the 3rd local output to one of the reducers
          ucom
          scom
          con def-Mapper act
          con def-Reducer sum act
          star comp
          `` 6th transition
+         `` deliver the 4th local output to one of the reducers
          ucom
          scom
          con def-Mapper act
          con def-Reducer sum act
          star comp
          `` 7th transition
+         `` notify the TaskMonitor that one of the mappers has completed its execution
          ucom
          scom
          con def-Mapper act
          con def-TaskMonitor act
          star comp
          `` 8th transition
+         `` ditto for the remaining mapper
          ucom scom
          con def-Mapper act
          con def-TaskMonitor act
          star comp
          `` 9th transition
+         `` inform one of the reducers that there are no more local outputs to aggregate
          ucom
          scom
          con def-TaskMonitor act
          con def-Reducer sum act
          star comp
          `` 10th transition
+         `` ditto for the second reducer
          ucom
          scom
          con def-TaskMonitor act
          con def-Reducer sum act
          star comp
          `` 11th transition
+         `` collect the 1st global output
          ucom
          scom
          act
          con def-Collector act
          star comp
          `` 12th transition
+         `` collect the 2nd global output
          ucom
          scom
          act
-         con def-Collector act)
+         con def-Collector act
+         star)
   `` satisfied in 1.3 hours
 close
