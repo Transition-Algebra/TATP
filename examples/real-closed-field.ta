@@ -1,0 +1,122 @@
+spec MULT-GROUP is `` with loose semantics
+  sort MG  .
+  op 1 : () -> MG .
+  op _*_ : MG MG -> MG [assoc comm] .
+  op 1/_ : MG -> MG .
+  var x : MG .
+  ax x * 1 = x .
+  ax x * 1/(x) = 1 .
+endspec
+
+spec ZEXT-MULT-GROUP is `` with tight semantics
+  including MULT-GROUP . `` in protecting mode
+  sort F .
+  op 0 : () -> F .
+  op nz : MG -> F .
+  op _*_ : F F -> F [assoc comm] .
+  vars x, y : MG .
+  ax 0 * 0 = 0 .
+  ax nz(x) * 0 = 0 .
+  ax nz(x) * nz(y) = nz(x * y) .
+endspec
+
+spec FIELD is `` with loose semantics
+  including ZEXT-MULT-GROUP . `` in protecting mode
+  op _+_ : F F -> F [assoc comm] .
+  op -_ : F -> F .
+  vars x, y, z : F .
+  ax x + 0 = x .
+  ax x + (- x) = 0 .
+  ax x * (y + z) = (x * y) + (x * z) .
+endspec
+
+spec ORDERED-FIELD is `` with loose semantics
+  including FIELD . `` in protecting mode
+  sort Order .
+  ops lt, <=, <, >=, > : () -> Order .
+  vars x, y, z : F .
+  ax x =(<=)> y iff x =((lt)*)> y .
+  ax x =(<)> y iff x =(<=)> y and not x = y .
+  ax x =(>=)> y iff y =(<=)> x .
+  ax x =(>)> y iff y =(<)> x .
+  ax x = y if x =(<=)> y and y =(<=)> x .
+  ax x =(<=)> y or y =(<=)> x .
+  ax (x + z) =(<=)> (y + z) if x =(<=)> y .
+  ax (x * z) =(<=)> (y * z) if x =(<=)> y and 0 =(<=)> z .
+
+  ops min, max : F F -> F [comm] .
+  ax min(x, y) = x if x =(<=)> y .
+  ax max(x, y) = x if x =(>=)> y .
+endspec
+
+spec NAT is `` with tight semantics
+  sort Nat .
+  op 0 : () -> Nat .
+  op s_ : Nat -> Nat .
+endspec
+
+spec NAT-OPS is `` with tight semantics
+  including NAT . `` in protecting mode
+  vars m, n : Nat .
+  op _+_ : Nat Nat -> Nat [assoc comm] .
+  ax 0 + n = n .
+  ax (s m) + n = s (m + n) .
+  op _*_ : Nat Nat -> Nat [assoc comm] .
+  ax 0 * n = 0 .
+  ax (s m) * n = (m * n) + n .
+  op max : Nat Nat -> Nat [assoc comm] .
+  ax max(0, n) = n .
+  ax max(s m, s n) = s max(m, n) .
+  op _^_ : Nat Nat -> Nat .
+  ax n ^ 0 = s 0 .
+  ax n ^ (s m) = n * (n ^ m) .
+  op rem2 : Nat -> Nat .
+  ax rem2(0) = 0 .
+  ax rem2(s 0) = s 0 .
+  ax rem2(s s n) = rem2(n) .
+endspec
+
+spec FIELD-OPS is `` with tight semantics
+  including FIELD . `` in protecting mode
+  including NAT-OPS . `` in protecting mode
+  var x : F .
+  var n : Nat .
+  op _^_ : F Nat -> F .
+  ax x ^ 0 = nz(1) .
+  ax x ^ (s n) = x * (x ^ n) .
+endspec
+
+spec POLYNOMIAL is `` with tight semantics
+  including FIELD-OPS . `` in protecting mode
+  sort Polynomial .
+  op _X^_ : F Nat -> Polynomial .
+  op _+_ : Polynomial Polynomial -> Polynomial [assoc comm] .
+  vars p, q, r : Polynomial .
+  vars a, b, x : F .
+  vars m, n : Nat .
+  ax 0 X^ (s n) = 0 X^ 0 .
+  ax p + (0 X^ 0) = p .
+  ax (a X^ n) + (b X^ n) = (a + b) X^ n .
+  op -_ : Polynomial -> Polynomial .
+  ax - (a X^ n) = (- a) X^ n .
+  ax - (p + q) = (- p) + (- q) .
+  op _*_ : Polynomial Polynomial -> Polynomial [assoc comm] .
+  ax (a X^ m) * (b X^ n) = (a * b) X^ (m + n) .
+  ax p * (q + r) = (p * q) + (p * r) .
+  op __ : Polynomial F -> F .
+  ax (a X^ n)(x) = a * (x ^ n) .
+  ax (p + q)(x) = (p(x)) + (q(x)) .
+  op degree : Polynomial -> Nat .
+  ax degree(a X^ n) = 0 if a = 0 .
+  ax degree(a X^ n) = n if not a = 0 .
+  ax degree(p + q) = max(degree(p), degree(q)) .
+endspec
+
+spec REAL-CLOSED-FIELD is `` with loose semantics
+  including ORDERED-FIELD . `` in protecting mode
+  including POLYNOMIAL . `` in protecting mode
+  var y : F .
+  var p : Polynomial .
+  ax 0 =(<=)> y implies (exists {x:F} y = x * x) .
+  ax rem2(degree(p)) = s 0 implies (exists {x:F} p(x) = 0) .
+endspec
