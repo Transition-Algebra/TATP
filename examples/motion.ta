@@ -1,0 +1,111 @@
+load fun.ta
+
+spec MOTION is `` with loose semantics
+  including RCF-FUN . `` in protecting mode
+
+  `` Tasks  ....................................................................
+  sort Name .
+  op move : () -> Name .
+
+  sort TaskList .
+  op nil : () -> TaskList .
+  op Task : Name FF F -> TaskList .
+  op __ : TaskList TaskList -> TaskList [assoc id: (nil)] .
+
+  `` Trajectories  .............................................................
+  sort Trajectory .
+  `` Every trajectory corresponds to a differentiable function of type F->FF
+  op map : Trajectory -> F->FF .
+  vars W, M : Trajectory .
+  ax exists {F2:F->FF} d(map(W)) = just F2 .
+
+  op hold-position : FF -> Trajectory .
+  var P : FF .
+  ax map(hold-position(P)) = const(P) .
+
+  `` Compute the position at a given time T on a trajectory W
+  op __ : Trajectory F -> FF .
+  var T : F .
+  ax W(T) = map(W)(T) .
+
+  `` Vehicles  .................................................................
+  sort VehicleSet .
+  op empty : () -> VehicleSet .
+  op Vehicle : Name Trajectory F -> VehicleSet .
+  op __ : VehicleSet VehicleSet -> VehicleSet [assoc comm] .
+
+  `` Configurations and actions (labels for reconfigurations)  .................
+  sort Config .
+  op Config : F VehicleSet TaskList -> Config .
+
+  sort Action .
+  op cont : F -> Action .
+  op exe : () -> Action .
+  op move : Trajectory F -> Action .
+
+  `` Auxiliary operations  .....................................................
+  vars S, D : F .
+  vars VN, TN : Name .
+  var W : Trajectory .
+  vars VS, VS1, VS2 : VehicleSet .
+  var TkL : TaskList .
+
+  `` Advance a set of vehicles by a given time amount D
+  op advance : VehicleSet F -> VehicleSet .
+  ax advance(empty, D) = empty .
+  ax advance(Vehicle(VN, W, T), D) = Vehicle(VN, W, T + (- D)) .
+  ax advance(VS1 VS2, D) = advance(VS1, D) advance(VS2, D) .
+
+  `` Compute the least time needed for completing the execution
+  `` of at least one vehicle in a given set of vehicles
+  op tmin : VehicleSet -> F .
+  ax tmin(empty) = 0 .
+  ax tmin(Vehicle(VN, W, T)) = T .
+  ax tmin(VS1 VS2) = min(tmin(VS1), tmin(VS2)) .
+
+  `` Count how many vehicles in a given set have trajectories that
+  `` collide with a given trajectory G in a time interval (S, S+D)
+  op colliding-trajectories : F F VehicleSet Trajectory -> F .
+  ax colliding-trajectories(S, D, empty, M) = 0 .
+  ax colliding-trajectories(S, D, Vehicle(VN, W, T), M) = 0 if
+     (forall {x:F} 0 =(<=)> x and x =(<=)> min(D, T) implies
+                   not W(S + x) = M(S + x)) .
+  ax colliding-trajectories(S, D, Vehicle(VN, W, T), M) = nz(1) if
+     (exists {x:F} 0 =(<=)> x and x =(<=)> min(D, T) and
+                   W(S + x) = M(S + x)) .
+  ax colliding-trajectories(S, D, VS1 VS2, M)
+     = colliding-trajectories(S, D, VS1, M)
+     + colliding-trajectories(S, D, VS2, M) .
+
+  `` Count the pair sets of vehicles that have colliding trajectories
+  op colliding-trajectories : Config -> F .
+  ax colliding-trajectories(Config(S, empty, TkL)) = 0 .
+  ax colliding-trajectories(Config(S, Vehicle(VN, W, T), TkL)) = 0 .
+  ax colliding-trajectories(Config(S, Vehicle(VN, W, T) VS, TkL))
+    = colliding-trajectories(S, T, VS, W)
+    + colliding-trajectories(Config(S, VS, TkL)) .
+
+  `` System dynamics  ..........................................................
+  `` Time advancement
+  ax Config(S, VS, TkL)
+     =(cont(D))> Config(S + D, advance(VS, D), TkL)
+     if D =(<=)> tmin(VS) .
+
+  `` Execution
+  ax Config(S, Vehicle(VN, W, 0) VS, Task(TN, P, T) TkL)
+     =(exe)> Config(S, Vehicle(TN, hold-position(P), T) VS, TkL)
+     if colliding-trajectories(S, T, VS, hold-position(P)) = 0 .
+
+  `` Movement
+  ax Config(S, Vehicle(VN, W, 0) VS, TkL)
+     =(move(M, T))> Config(S, Vehicle(move, M, T) VS, TkL)
+     if colliding-trajectories(S, T, VS, M) = 0 .
+
+  `` Properties  ...............................................................
+  ax forall {K1:Config, K2:Config} K1 =(cont(D))> K2
+       implies colliding-trajectories(K2) = colliding-trajectories(K1) .
+  ax forall {K1:Config, K2:Config} K1 =(exe)> K2
+       implies colliding-trajectories(K2) =(<=)> colliding-trajectories(K1) .
+  ax forall {K1:Config, K2:Config} K1 =(move(M, T))> K2
+       implies colliding-trajectories(K2) =(<=)> colliding-trajectories(K1) .
+endspec

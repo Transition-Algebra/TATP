@@ -1,0 +1,78 @@
+load real-closed-field.ta
+
+spec RCF-FUN is `` with loose semantics
+  including REAL-CLOSED-FIELD . `` in protecting mode
+  vars x, y, a, l : F .
+
+  `` Functions of type F->F  ...................................................
+  sort F->F .
+  op __ : F->F F -> F .
+  vars f, f', g : F->F .
+  ax f = g if (forall {x:F} f(x) = g(x)) .
+
+  sort F?>F .
+  op just_ : F->F -> F?>F .
+
+  sort F? .
+  op just_ : F -> F? .
+  op __ : F?>F F -> F? .
+  ax (just f) x = just (f x) .
+  op __ : F?>F F? -> F? .
+  ax (just f) (just x) = just (f x) .
+
+  `` Pairs  ....................................................................
+  sort FF .
+  op <__> : F F -> FF .
+  op fst : FF -> F .
+  op snd : FF -> F .
+  var xy : FF .
+  ax fst(< x y >) = x .
+  ax snd(< x y >) = y .
+  ax < fst(xy) snd(xy) > = xy .
+
+  `` Functions of type F->FF ..................................................
+  sort F->FF .
+  op __ : F->FF F -> FF .
+  vars f2, f2', g2 : F->FF .
+  ax f2 = g2 if (forall {x:F} f2(x) = g2(x)) .
+
+  sort F?>FF .
+  op just_ : F->FF -> F?>FF .
+
+  sort FF? .
+  op just_ : FF -> FF? .
+  op __ : F?>FF F -> FF? .
+  ax (just f2) x = just (f2 x) .
+  op __ : F?>FF F? -> FF? .
+  ax (just f2) (just x) = just (f2 x) .
+
+  `` Concrete functions .......................................................
+  op abs : F -> F .
+  ax abs(x) = x if 0 =(<=)> x .
+  ax abs(x) = - x if 0 =(>)> x .
+
+  op const : FF -> F->FF .
+  ax const(xy) x = xy .
+
+  op _;fst : F->FF -> F->F .
+  ax ((f2);fst)(x) = fst(f2(x)) .
+
+  op _;snd : F->FF -> F->F .
+  ax ((f2);snd)(x) = snd(f2(x)) .
+
+  `` Differentiability  ........................................................
+  sort DFF .
+  op D : F->F -> DFF .
+  ax a =(D(f))> l if
+    (forall {e:F} e =(>)> 0 implies
+      (exists {d:F} d =(>)> 0 and
+        (forall {h:MG} 0 =(<)> abs(nz(h)) and abs(nz(h)) =(<)> d implies
+          abs((f(a + nz(h)) + (- (f(a)))) * nz(1/(h)) + (- l)) =(<)> e))) .
+
+  op d : F->F -> F?>F .
+  ax d(f) = just f' if (forall {x:F} x =(D(f))> f'(x)) .
+
+  op d : F->FF -> F?>FF .
+  ax d(f2) = just f2'
+     if d((f2);fst) = just ((f2');fst) and d((f2);snd) = just ((f2');snd) .
+endspec
